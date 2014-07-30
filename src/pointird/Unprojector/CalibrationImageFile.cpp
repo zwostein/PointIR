@@ -60,7 +60,8 @@ CalibrationImageFile::~CalibrationImageFile()
 std::string CalibrationImageFile::getFilename() const
 {
 	std::stringstream ss;
-	ss << "/tmp/PointIR." << getpid() << "." << this->width << "x" << this->height << ".png";
+//	ss << "/tmp/PointIR." << getpid() << "." << this->width << "x" << this->height << ".png";
+	ss << "/tmp/PointIR." << this->width << "x" << this->height << ".png";
 	return ss.str();
 }
 
