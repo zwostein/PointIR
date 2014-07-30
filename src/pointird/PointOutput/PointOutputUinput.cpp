@@ -83,8 +83,8 @@ static int xioctl( int fd, unsigned long int request )
 }
 
 
-PointOutputUinput::PointOutputUinput()
-	: pImpl( new Impl )
+PointOutputUinput::PointOutputUinput() :
+	pImpl( new Impl )
 {
 	this->pImpl->fd = open( uinputDeviceName.c_str(), O_WRONLY | O_NONBLOCK );
 	if( this->pImpl->fd < 0 )
@@ -197,7 +197,7 @@ static void addEvent( std::vector< struct input_event > & events, __u16 type, __
 }
 
 
-void PointOutputUinput::outputPoints( const std::vector< Point > & points )
+void PointOutputUinput::outputPoints( const std::vector< PointIR_Point > & points )
 {
 	// https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt
 	std::vector< struct input_event > events;
@@ -218,7 +218,7 @@ void PointOutputUinput::outputPoints( const std::vector< Point > & points )
 //		{
 //			addEvent( events, EV_KEY, BTN_TOUCH, 1 );
 //		}
-		for( const Point & point : points )
+		for( const PointIR_Point & point : points )
 		{
 			int16_t x = resX * point.x;
 			int16_t y = resY * point.y;

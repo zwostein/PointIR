@@ -49,12 +49,12 @@ static cv::Mat imageDebug;
 #endif
 
 
-static void pointsFromContours( std::vector<Point> & points, const std::vector< std::vector<cv::Point> > & contours )
+static void pointsFromContours( std::vector<PointIR_Point> & points, const std::vector< std::vector<cv::Point> > & contours )
 {
 	points.reserve( contours.size() );
 	for( size_t i = 0 ; i < contours.size() ; i++ )
 	{
-		Point point;
+		PointIR_Point point = {};
 		assert( !contours[i].empty() );
 		for( const cv::Point & contourPoint : contours[i] )
 		{
@@ -71,14 +71,14 @@ static void pointsFromContours( std::vector<Point> & points, const std::vector< 
 }
 
 
-static void pointsFromContours_BoundFiltered( std::vector<Point> & points, const std::vector< std::vector<cv::Point> > & contours,
+static void pointsFromContours_BoundFiltered( std::vector<PointIR_Point> & points, const std::vector< std::vector<cv::Point> > & contours,
                                               const float & minSize, const float & maxSize )
 {
 	points.reserve( contours.size() );
 	for( size_t i = 0 ; i < contours.size() ; i++ )
 	{
 		BoundingBox box;
-		Point point;
+		PointIR_Point point = {};
 		assert( !contours[i].empty() );
 		for( const cv::Point & contourPoint : contours[i] )
 		{
@@ -112,7 +112,7 @@ static void pointsFromContours_BoundFiltered( std::vector<Point> & points, const
 }
 
 
-std::vector< Point > PointDetectorCV::detect( const uint8_t * image, unsigned int width, unsigned int height )
+std::vector< PointIR_Point > PointDetectorCV::detect( const uint8_t * image, unsigned int width, unsigned int height )
 {
 	// create a thresholded copy of input image
 	cv::Mat imageThresholded( cv::Size( width, height), CV_8UC1 );
@@ -142,7 +142,7 @@ std::vector< Point > PointDetectorCV::detect( const uint8_t * image, unsigned in
 #endif
 
 	// approximate the middle of each contour - this is our point
-	std::vector< Point > points;
+	std::vector< PointIR_Point > points;
 	points.reserve( contours.size() );
 	if( boundingFilterEnabled )
 	{

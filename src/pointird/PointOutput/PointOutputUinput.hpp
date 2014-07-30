@@ -34,7 +34,7 @@ public:
 	PointOutputUinput();
 	~PointOutputUinput();
 
-	virtual void outputPoints( const std::vector< Point > & points ) override;
+	virtual void outputPoints( const std::vector< PointIR_Point > & points ) override;
 
 private:
 	class Impl;

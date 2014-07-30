@@ -9,14 +9,16 @@ add_executable( ${EXECUTABLE_NAME}
 	src/pointird/main.cpp
 	src/pointird/Processor.cpp
 	src/pointird/Capture/CaptureV4L2.cpp
+	src/pointird/FrameOutput/UnixDomainSocketFrameOutput.cpp
 	src/pointird/PointDetector/PointDetectorCV.cpp
 	src/pointird/Unprojector/AutoUnprojectorCV.cpp
 	src/pointird/Unprojector/CalibrationDataFile.cpp
 	src/pointird/Unprojector/CalibrationImageFile.cpp
+	src/pointird/PointFilter/OffscreenFilter.cpp
 	src/pointird/PointOutput/DebugPointOutputCV.cpp
+	src/pointird/PointOutput/UnixDomainSocketPointOutput.cpp
 	src/pointird/PointOutput/PointOutputUinput.cpp
 	src/pointird/Controller/DBusController.cpp
-	src/pointird/PointFilter/OffscreenFilter.cpp
 )
 
 include_directories( "${CMAKE_SOURCE_DIR}/src" )

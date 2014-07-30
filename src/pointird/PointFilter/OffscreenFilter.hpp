@@ -29,13 +29,13 @@
 class OffscreenFilter : public APointFilter
 {
 public:
-	virtual void filterPoints( std::vector< Point > & points ) const override;
+	virtual void filterPoints( std::vector< PointIR_Point > & points ) const override;
 
 	void setTolerance( float tolerance ) { this->tolerance = tolerance; }
 	float getTolerance() const { return this->tolerance; }
 
 private:
-	float tolerance = 0.0f;
+	float tolerance = 0.1f;
 };
 
 

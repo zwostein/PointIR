@@ -19,8 +19,9 @@
 
 #include "Processor.hpp"
 
-#include "Point.hpp"
+#include "Point.h"
 #include "Capture/ACapture.hpp"
+#include "FrameOutput/AFrameOutput.hpp"
 #include "PointDetector/APointDetector.hpp"
 #include "Unprojector/AUnprojector.hpp"
 #include "Unprojector/AAutoUnprojector.hpp"
@@ -36,8 +37,10 @@ class Processor::Impl
 public:
 	APointFilter * filter = nullptr;
 
-	std::set< APointOutput * > outputs;
-	bool outputEnabled = true;
+	std::set< AFrameOutput * > frameOutputs;
+	std::set< APointOutput * > pointOutputs;
+	bool frameOutputEnabled = true;
+	bool pointOutputEnabled = true;
 
 	std::vector< uint8_t > image;
 	unsigned int width = 0;
@@ -111,6 +114,12 @@ void Processor::processFrame()
 	this->capture.advanceFrame();
 	this->capture.frameAsGreyscale( this->pImpl->image.data(), this->pImpl->image.size() );
 
+	if( this->pImpl->frameOutputEnabled )
+	{
+		for( AFrameOutput * output : this->pImpl->frameOutputs )
+		output->outputFrame( this->pImpl->image.data(), this->pImpl->width, this->pImpl->height );
+	}
+
 	if( this->isCalibrating() )
 	{
 		//TODO: as soon as there are multiple ways for calibrating, move the calibration logic to an external module/class
@@ -128,16 +137,16 @@ void Processor::processFrame()
 	}
 	else
 	{
-		std::vector< Point > points = detector.detect( this->pImpl->image.data(), this->pImpl->width, this->pImpl->height );
+		std::vector< PointIR_Point > points = detector.detect( this->pImpl->image.data(), this->pImpl->width, this->pImpl->height );
 
 		this->unprojector.unproject( points );
 
 		if( this->pImpl->filter )
 			this->pImpl->filter->filterPoints( points );
 
-		if( this->pImpl->outputEnabled )
+		if( this->pImpl->pointOutputEnabled )
 		{
-			for( APointOutput * output : this->pImpl->outputs )
+			for( APointOutput * output : this->pImpl->pointOutputs )
 				output->outputPoints( points );
 		}
 	}
@@ -181,27 +190,51 @@ bool Processor::isCalibrationSucceeded() const
 }
 
 
-bool Processor::addOutput( APointOutput * output )
+bool Processor::addFrameOutput( AFrameOutput * output )
 {
-	return this->pImpl->outputs.insert( output ).second;
+	return this->pImpl->frameOutputs.insert( output ).second;
 }
 
 
-bool Processor::removeOutput( APointOutput * output )
+bool Processor::removeFrameOutput( AFrameOutput * output )
 {
-	return this->pImpl->outputs.erase( output );
+	return this->pImpl->frameOutputs.erase( output );
 }
 
 
-void Processor::setOutputEnabled( bool enable )
+bool Processor::addPointOutput( APointOutput * output )
 {
-	this->pImpl->outputEnabled = enable;
+	return this->pImpl->pointOutputs.insert( output ).second;
 }
 
 
-bool Processor::isOutputEnabled() const
+bool Processor::removePointOutput( APointOutput * output )
 {
-	return this->pImpl->outputEnabled;
+	return this->pImpl->pointOutputs.erase( output );
+}
+
+
+void Processor::setFrameOutputEnabled( bool enable )
+{
+	this->pImpl->frameOutputEnabled = enable;
+}
+
+
+bool Processor::isFrameOutputEnabled() const
+{
+	return this->pImpl->frameOutputEnabled;
+}
+
+
+void Processor::setPointOutputEnabled( bool enable )
+{
+	this->pImpl->pointOutputEnabled = enable;
+}
+
+
+bool Processor::isPointOutputEnabled() const
+{
+	return this->pImpl->pointOutputEnabled;
 }
 
 

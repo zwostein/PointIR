@@ -17,19 +17,17 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _APOINTOUTPUT__INCLUDED_
-#define _APOINTOUTPUT__INCLUDED_
+#ifndef _AFRAMEOUTPUT__INCLUDED_
+#define _AFRAMEOUTPUT__INCLUDED_
 
 
-#include "Point.h"
-
-#include <vector>
+#include <stdint.h>
 
 
-class APointOutput
+class AFrameOutput
 {
 public:
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) = 0;
+	virtual void outputFrame( const uint8_t * image, unsigned int width, unsigned int height ) = 0;
 };
 
 

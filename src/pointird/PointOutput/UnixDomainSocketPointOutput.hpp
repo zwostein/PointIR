@@ -17,19 +17,29 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _APOINTOUTPUT__INCLUDED_
-#define _APOINTOUTPUT__INCLUDED_
+#ifndef _UNIXDOMAINSOCKETPOINTOUTPUT__INCLUDED_
+#define _UNIXDOMAINSOCKETPOINTOUTPUT__INCLUDED_
 
 
-#include "Point.h"
+#include "APointOutput.hpp"
 
-#include <vector>
+#include <memory>
 
 
-class APointOutput
+class UnixDomainSocketPointOutput : public APointOutput
 {
 public:
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) = 0;
+	UnixDomainSocketPointOutput();
+	~UnixDomainSocketPointOutput();
+
+	virtual void outputPoints( const std::vector< PointIR_Point > & points ) override;
+
+	const std::string & getSocketPath() const { return this->socketPath; }
+
+private:
+	std::string socketPath;
+	class Impl;
+	std::unique_ptr< Impl > pImpl;
 };
 
 

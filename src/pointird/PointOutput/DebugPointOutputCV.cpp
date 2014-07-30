@@ -25,7 +25,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 
-DebugPointOutputCV::DebugPointOutputCV( const Processor * processor ) : processor(processor)
+DebugPointOutputCV::DebugPointOutputCV( const Processor & processor ) : processor(processor)
 {
 }
 
@@ -35,10 +35,10 @@ DebugPointOutputCV::~DebugPointOutputCV()
 }
 
 
-void DebugPointOutputCV::outputPoints( const std::vector< Point > & points )
+void DebugPointOutputCV::outputPoints( const std::vector< PointIR_Point > & points )
 {
 	cv::Mat image;
-	std::vector< uint8_t > frame = this->processor->getProcessedFrame();
+	std::vector< uint8_t > frame = this->processor.getProcessedFrame();
 	if( !frame.size() )
 	{
 		image = cv::Mat( cv::Size( 256, 256 ), CV_8UC1 );
@@ -46,13 +46,13 @@ void DebugPointOutputCV::outputPoints( const std::vector< Point > & points )
 	}
 	else
 	{
-		image = cv::Mat( cv::Size( this->processor->getFrameWidth(), this->processor->getFrameHeight() ), CV_8UC1 );
+		image = cv::Mat( cv::Size( this->processor.getFrameWidth(), this->processor.getFrameHeight() ), CV_8UC1 );
 		assert( image.isContinuous() );
 		memcpy( image.data, frame.data(), frame.size() );
-		processor->getUnprojector().unproject( image.data, this->processor->getFrameWidth(), this->processor->getFrameHeight() );
+		processor.getUnprojector().unproject( image.data, this->processor.getFrameWidth(), this->processor.getFrameHeight() );
 	}
 	cv::cvtColor( image, image, CV_GRAY2RGB );
-	for( const Point & point : points )
+	for( const PointIR_Point & point : points )
 		cv::circle( image, cv::Point2f( point.x * image.cols, point.y * image.rows ), 10.0f, cv::Scalar( 0, 255, 0 ) );
 	cv::imshow( "DebugPointOutputCV", image );
 }

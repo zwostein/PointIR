@@ -21,7 +21,7 @@
 #define _APOINTFILTER__INCLUDED_
 
 
-#include "../Point.hpp"
+#include "Point.h"
 
 #include <vector>
 
@@ -29,7 +29,7 @@
 class APointFilter
 {
 public:
-	virtual void filterPoints( std::vector< Point > & points ) const = 0;
+	virtual void filterPoints( std::vector< PointIR_Point > & points ) const = 0;
 };
 
 

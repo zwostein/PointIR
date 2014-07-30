@@ -17,19 +17,29 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _APOINTOUTPUT__INCLUDED_
-#define _APOINTOUTPUT__INCLUDED_
+#ifndef _UNIXDOMAINSOCKETFRAMEOUTPUT__INCLUDED_
+#define _UNIXDOMAINSOCKETFRAMEOUTPUT__INCLUDED_
 
 
-#include "Point.h"
+#include "AFrameOutput.hpp"
 
-#include <vector>
+#include <memory>
 
 
-class APointOutput
+class UnixDomainSocketFrameOutput : public AFrameOutput
 {
 public:
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) = 0;
+	UnixDomainSocketFrameOutput();
+	~UnixDomainSocketFrameOutput();
+
+	virtual void outputFrame( const uint8_t * image, unsigned int width, unsigned int height ) override;
+
+	const std::string & getSocketPath() const { return this->socketPath; }
+
+private:
+	std::string socketPath;
+	class Impl;
+	std::unique_ptr< Impl > pImpl;
 };
 
 

@@ -37,9 +37,6 @@ public:
 	CaptureV4L2( const std::string & device, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
 	~CaptureV4L2();
 
-	void open();
-	void close();
-
 	virtual void start() override;
 	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) override;
 	virtual bool frameAsGreyscale( uint8_t * dst, size_t size ) const override;

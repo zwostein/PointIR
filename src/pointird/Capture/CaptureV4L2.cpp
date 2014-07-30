@@ -159,7 +159,6 @@ static bool getClosestFrameInterval( int fd, float fps, const struct v4l2_pix_fo
 			throw RUNTIME_ERROR( "V4L2_FRMIVAL_TYPE_STEPWISE is unimplemented" );
 			break;
 		case V4L2_FRMIVAL_TYPE_CONTINUOUS:
-			//TODO:: test
 			{
 				float ivalMin = static_cast<float>(ivalenum.stepwise.min.numerator) / static_cast<float>(ivalenum.stepwise.min.denominator);
 				float ivalMax = static_cast<float>(ivalenum.stepwise.max.numerator) / static_cast<float>(ivalenum.stepwise.max.denominator);
@@ -189,28 +188,6 @@ static bool getClosestFrameInterval( int fd, float fps, const struct v4l2_pix_fo
 
 CaptureV4L2::CaptureV4L2( const std::string & device, unsigned int width, unsigned int height, float fps )
 	: pImpl( new Impl ), device(device), width(width), height(height), fps(fps)
-{
-}
-
-
-CaptureV4L2::~CaptureV4L2()
-{
-	try
-	{
-		this->close();
-	}
-	catch( std::exception & ex )
-	{
-		std::cerr << std::string(__PRETTY_FUNCTION__) << std::string(": ignoring exception: ") << ex.what() << "\n";
-	}
-	catch( ... )
-	{
-		std::cerr << std::string(__PRETTY_FUNCTION__) << std::string(": ignoring unknown exception\n");
-	}
-}
-
-
-void CaptureV4L2::open()
 {
 	// check if device exists
 	struct stat st;
@@ -327,21 +304,32 @@ void CaptureV4L2::open()
 }
 
 
-void CaptureV4L2::close()
+CaptureV4L2::~CaptureV4L2()
 {
-	for( Impl::Buffer & buffer : this->pImpl->buffers )
+	try
 	{
-		if( -1 == munmap( buffer.start, buffer.length ) )
-			throw SYSTEM_ERROR( errno, "munmap" );
-	}
+		for( Impl::Buffer & buffer : this->pImpl->buffers )
+		{
+			if( -1 == munmap( buffer.start, buffer.length ) )
+				throw SYSTEM_ERROR( errno, "munmap" );
+		}
 
-	if( this->pImpl->fd )
+		if( this->pImpl->fd )
+		{
+			if( -1 == ::close( this->pImpl->fd ) )
+				throw SYSTEM_ERROR( errno, "close(\"" + this->device + "\")" );
+		}
+
+		this->pImpl->fd = 0;
+	}
+	catch( std::exception & ex )
 	{
-		if( -1 == ::close( this->pImpl->fd ) )
-			throw SYSTEM_ERROR( errno, "close(\"" + this->device + "\")" );
+		std::cerr << std::string(__PRETTY_FUNCTION__) << std::string(": ignoring exception: ") << ex.what() << "\n";
 	}
-
-	this->pImpl->fd = 0;
+	catch( ... )
+	{
+		std::cerr << std::string(__PRETTY_FUNCTION__) << std::string(": ignoring unknown exception\n");
+	}
 }
 
 

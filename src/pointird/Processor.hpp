@@ -29,6 +29,7 @@
 
 
 class ACapture;
+class AFrameOutput;
 class APointDetector;
 class AUnprojector;
 class APointFilter;
@@ -59,11 +60,15 @@ public:
 	bool isCalibrating() const;
 	bool isCalibrationSucceeded() const;
 
-	bool addOutput( APointOutput * output );
-	bool removeOutput( APointOutput * output );
+	bool addFrameOutput( AFrameOutput * output );
+	bool removeFrameOutput( AFrameOutput * output );
+	void setFrameOutputEnabled( bool enable );
+	bool isFrameOutputEnabled() const;
 
-	void setOutputEnabled( bool enable );
-	bool isOutputEnabled() const;
+	bool addPointOutput( APointOutput * output );
+	bool removePointOutput( APointOutput * output );
+	void setPointOutputEnabled( bool enable );
+	bool isPointOutputEnabled() const;
 
 	void setPointFilter( APointFilter * pointFilter );
 	APointFilter * getPointFilter() const;

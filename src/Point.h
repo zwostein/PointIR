@@ -21,11 +21,11 @@
 #define _POINT__INCLUDED_
 
 
-struct Point
+typedef struct
 {
-	float x = 0.0f;
-	float y = 0.0f;
-};
+	float x;
+	float y;
+} PointIR_Point;
 
 
 #endif

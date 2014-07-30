@@ -21,7 +21,7 @@
 #define _AUNPROJECTOR__INCLUDED_
 
 
-#include "../Point.hpp"
+#include "Point.h"
 
 #include <stdint.h>
 
@@ -32,7 +32,7 @@ class AUnprojector
 {
 public:
 	virtual void unproject( uint8_t * greyImage, unsigned int width, unsigned int height ) const = 0;
-	virtual void unproject( std::vector< Point > & points ) const = 0;
+	virtual void unproject( std::vector< PointIR_Point > & points ) const = 0;
 
 	virtual std::vector< uint8_t > getRawCalibrationData() const = 0;
 	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) = 0;

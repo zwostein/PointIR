@@ -29,11 +29,11 @@ class Processor;
 class DebugPointOutputCV : public APointOutput
 {
 public:
-	DebugPointOutputCV( const Processor * processor );
+	DebugPointOutputCV( const Processor & processor );
 	~DebugPointOutputCV();
-	virtual void outputPoints( const std::vector< Point > & points ) override;
+	virtual void outputPoints( const std::vector< PointIR_Point > & points ) override;
 private:
-	const Processor * processor;
+	const Processor & processor;
 };
 
 

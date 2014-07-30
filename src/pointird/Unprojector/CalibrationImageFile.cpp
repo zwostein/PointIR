@@ -24,11 +24,15 @@
 #include <lodepng.h>
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <stdexcept>
 
+#include <unistd.h>
+
 #include <sys/stat.h>
+#include <sys/types.h>
 
 
 #define RUNTIME_ERROR( whattext ) \
@@ -55,7 +59,9 @@ CalibrationImageFile::~CalibrationImageFile()
 
 std::string CalibrationImageFile::getFilename() const
 {
-	return std::string("/tmp/PointIR."+std::to_string(reinterpret_cast<size_t>(&(this->unprojector)))+"."+std::to_string(this->width)+"x"+std::to_string(this->height)+".png");
+	std::stringstream ss;
+	ss << "/tmp/PointIR." << getpid() << "." << this->width << "x" << this->height << ".png";
+	return ss.str();
 }
 
 

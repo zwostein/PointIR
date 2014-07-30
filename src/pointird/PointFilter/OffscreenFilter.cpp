@@ -28,11 +28,11 @@ static void erase_unordered( std::vector< T > & v, typename std::vector< T >::si
 }
 
 
-void OffscreenFilter::filterPoints( std::vector< Point > & points ) const
+void OffscreenFilter::filterPoints( std::vector< PointIR_Point > & points ) const
 {
 	float minMargin = 0.0f - this->tolerance;
 	float maxMargin = 1.0f + this->tolerance;
-	for( std::vector< Point >::size_type i = 0; i < points.size(); )
+	for( std::vector< PointIR_Point >::size_type i = 0; i < points.size(); )
 	{
 		if( points[i].x < minMargin || points[i].x >= maxMargin || points[i].y < minMargin || points[i].y >= maxMargin )
 			erase_unordered( points, i );

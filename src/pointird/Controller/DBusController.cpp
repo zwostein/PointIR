@@ -24,6 +24,8 @@
 #include "../Unprojector/CalibrationDataFile.hpp"
 #include "../Unprojector/CalibrationImageFile.hpp"
 #include "../PointDetector/PointDetectorCV.hpp"
+//#include "../FrameOutput/UnixDomainSocketFrameOutput.hpp"
+//#include "../PointOutput/UnixDomainSocketPointOutput.hpp"
 
 #include <iostream>
 #include <string>
@@ -36,6 +38,14 @@
 
 #include <dbus/dbus.h>
 
+/*
+template< typename T > struct nameof {};
+#define NAME_CLASS( classtype ) \
+	template<> struct nameof<classtype> { const static std::string value() { return #classtype; } }
+
+NAME_CLASS( UnixDomainSocketPointOutput );
+NAME_CLASS( UnixDomainSocketFrameOutput );
+*/
 
 #define RUNTIME_ERROR( whattext ) \
 	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
@@ -120,11 +130,17 @@ public:
 		processorMethods.insert( { "isProcessing", std::bind( &Impl::get< bool >, this,
 			Getter< bool >( std::bind( &Processor::isProcessing, &processor ) ),
 			_1, _2 ) } );
-		processorMethods.insert( { "setOutputEnabled", std::bind( &Impl::set< bool >, this,
-			Setter< bool >( std::bind( &Processor::setOutputEnabled, &processor, _1 ) ),
+		processorMethods.insert( { "setFrameOutputEnabled", std::bind( &Impl::set< bool >, this,
+			Setter< bool >( std::bind( &Processor::setFrameOutputEnabled, &processor, _1 ) ),
 			_1, _2 ) } );
-		processorMethods.insert( { "isOutputEnabled", std::bind( &Impl::get< bool >, this,
-			Getter< bool >( std::bind( &Processor::isOutputEnabled, &processor ) ),
+		processorMethods.insert( { "isFrameOutputEnabled", std::bind( &Impl::get< bool >, this,
+			Getter< bool >( std::bind( &Processor::isFrameOutputEnabled, &processor ) ),
+			_1, _2 ) } );
+		processorMethods.insert( { "setPointOutputEnabled", std::bind( &Impl::set< bool >, this,
+			Setter< bool >( std::bind( &Processor::setPointOutputEnabled, &processor, _1 ) ),
+			_1, _2 ) } );
+		processorMethods.insert( { "isPointOutputEnabled", std::bind( &Impl::get< bool >, this,
+			Getter< bool >( std::bind( &Processor::isPointOutputEnabled, &processor ) ),
 			_1, _2 ) } );
 		this->interfaceMap.insert( { "PointIR.Controller.Processor", processorMethods } );
 	}

@@ -52,7 +52,7 @@ public:
 		return this->filterChain;
 	}
 
-	virtual void filterPoints( std::vector< Point > & points ) const override
+	virtual void filterPoints( std::vector< PointIR_Point > & points ) const override
 	{
 		for( const APointFilter * filter : this->filterChain )
 			filter->filterPoints( points );

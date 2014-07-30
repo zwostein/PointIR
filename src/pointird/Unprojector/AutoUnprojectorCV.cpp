@@ -90,8 +90,8 @@ static void drawChessboard( uint8_t * greyImage, unsigned int imageWidth, unsign
 
 AutoUnprojectorCV::AutoUnprojectorCV() : pImpl( new Impl )
 {
-	this->pImpl->perspective = cv::Mat::eye( 3, 3, CV_32F );
-	this->pImpl->normalizedPerspective = cv::Mat::eye( 3, 3, CV_32F );
+	this->pImpl->perspective = cv::Mat::eye( 3, 3, CV_64F );
+	this->pImpl->normalizedPerspective = cv::Mat::eye( 3, 3, CV_64F );
 }
 
 
@@ -199,10 +199,10 @@ void AutoUnprojectorCV::unproject( uint8_t * image, unsigned int width, unsigned
 }
 
 
-void AutoUnprojectorCV::unproject( std::vector< Point > & points ) const
+void AutoUnprojectorCV::unproject( std::vector< PointIR_Point > & points ) const
 {
 	const double * m = (const double*)this->pImpl->normalizedPerspective.data;
-	for( Point & point : points )
+	for( PointIR_Point & point : points )
 	{
 		double x = point.x;
 		double y = point.y;

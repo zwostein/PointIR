@@ -22,7 +22,7 @@
 
 
 #include "AAutoUnprojector.hpp"
-#include "../Point.hpp"
+#include "Point.h"
 
 #include <memory>
 
@@ -36,7 +36,7 @@ public:
 	~AutoUnprojectorCV();
 
 	virtual void unproject( uint8_t * greyImage, unsigned int width, unsigned int height ) const override;
-	virtual void unproject( std::vector< Point > & points ) const override;
+	virtual void unproject( std::vector< PointIR_Point > & points ) const override;
 
 	virtual std::vector< uint8_t > getRawCalibrationData() const override;
 	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) override;
