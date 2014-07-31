@@ -23,6 +23,7 @@
 
 #include "APointOutput.hpp"
 
+#include <string>
 #include <memory>
 
 

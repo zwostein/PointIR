@@ -23,6 +23,7 @@
 
 #include "AFrameOutput.hpp"
 
+#include <string>
 #include <memory>
 
 
