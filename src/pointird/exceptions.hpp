@@ -17,30 +17,20 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ACAPTURE__INCLUDED_
-#define _ACAPTURE__INCLUDED_
+#ifndef _EXCEPTIONS__INCLUDED_
+#define _EXCEPTIONS__INCLUDED_
 
-
-#include <PointIR/Frame.h>
 
 #include <string>
+#include <stdexcept>
+#include <system_error>
 
-#include <stdint.h>
 
+#define SYSTEM_ERROR( errornumber, whattext ) \
+	std::system_error( (errornumber), std::system_category(), std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
 
-class ACapture
-{
-public:
-	virtual void start() = 0;
-	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) = 0;
-	virtual PointIR_Frame * retrieveFrame( PointIR_Frame * reuse = nullptr ) const = 0;
-	virtual void stop() = 0;
-
-	virtual bool isCapturing() const = 0;
-	virtual std::string getName() const = 0;
-	virtual unsigned int getWidth() const = 0;
-	virtual unsigned int getHeight() const = 0;
-};
+#define RUNTIME_ERROR( whattext ) \
+	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
 
 
 #endif

@@ -21,7 +21,8 @@
 #define _APOINTDETECTOR__INCLUDED_
 
 
-#include "Point.h"
+#include <PointIR/Point.h>
+#include <PointIR/Frame.h>
 
 #include <vector>
 
@@ -31,7 +32,7 @@
 class APointDetector
 {
 public:
-	virtual std::vector< PointIR_Point > detect( const uint8_t * image, unsigned int width, unsigned int height ) = 0;
+	virtual std::vector< PointIR_Point > detect( const PointIR_Frame * frame ) = 0;
 };
 
 

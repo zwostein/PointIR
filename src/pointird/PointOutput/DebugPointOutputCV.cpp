@@ -24,6 +24,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <iostream>
+
 
 DebugPointOutputCV::DebugPointOutputCV( const Processor & processor ) : processor(processor)
 {
@@ -38,21 +40,22 @@ DebugPointOutputCV::~DebugPointOutputCV()
 void DebugPointOutputCV::outputPoints( const std::vector< PointIR_Point > & points )
 {
 	cv::Mat image;
-	std::vector< uint8_t > frame = this->processor.getProcessedFrame();
-	if( !frame.size() )
+	const PointIR_Frame * frame = this->processor.getProcessedFrame();
+	if( (!frame->width) || (!frame->height) )
 	{
 		image = cv::Mat( cv::Size( 256, 256 ), CV_8UC1 );
 		assert( image.isContinuous() );
 	}
 	else
 	{
-		image = cv::Mat( cv::Size( this->processor.getFrameWidth(), this->processor.getFrameHeight() ), CV_8UC1 );
+		image = cv::Mat( cv::Size( frame->width, frame->height ), CV_8UC1 );
 		assert( image.isContinuous() );
-		memcpy( image.data, frame.data(), frame.size() );
-		processor.getUnprojector().unproject( image.data, this->processor.getFrameWidth(), this->processor.getFrameHeight() );
+		memcpy( image.data, frame->data, frame->width * frame->height );
+		processor.getUnprojector().unproject( image.data, frame->width, frame->height );
 	}
 	cv::cvtColor( image, image, CV_GRAY2RGB );
 	for( const PointIR_Point & point : points )
 		cv::circle( image, cv::Point2f( point.x * image.cols, point.y * image.rows ), 10.0f, cv::Scalar( 0, 255, 0 ) );
 	cv::imshow( "DebugPointOutputCV", image );
+	cv::waitKey(1); // need this for event processing - window wouldn't be visible
 }

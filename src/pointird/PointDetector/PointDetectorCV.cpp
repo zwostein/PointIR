@@ -112,15 +112,15 @@ static void pointsFromContours_BoundFiltered( std::vector<PointIR_Point> & point
 }
 
 
-std::vector< PointIR_Point > PointDetectorCV::detect( const uint8_t * image, unsigned int width, unsigned int height )
+std::vector< PointIR_Point > PointDetectorCV::detect( const PointIR_Frame * frame )
 {
-	// create a thresholded copy of input image
-	cv::Mat imageThresholded( cv::Size( width, height), CV_8UC1 );
+	// create a thresholded copy of input image that may be modified
+	cv::Mat imageThresholded( cv::Size( frame->width, frame->height), CV_8UC1 );
 	assert( imageThresholded.isContinuous() );
-	unsigned int imageSize = width * height;
+	unsigned int imageSize = frame->width * frame->height;
 	for( unsigned int wh = 0 ; wh < imageSize ; wh++ )
 	{
-		if( image[wh] >= this->intensityThreshold )
+		if( frame->data[wh] >= this->intensityThreshold )
 			imageThresholded.data[wh] = 0xff;
 		else
 			imageThresholded.data[wh] = 0x00;
@@ -146,7 +146,7 @@ std::vector< PointIR_Point > PointDetectorCV::detect( const uint8_t * image, uns
 	points.reserve( contours.size() );
 	if( boundingFilterEnabled )
 	{
-		float averageImageSize = (width+height)/2;
+		float averageImageSize = (frame->width+frame->height)/2;
 		// minimum of one pixel for absolute point sizes
 		float minSize = std::max( 1.0f, this->minBoundingSize * averageImageSize );
 		float maxSize = std::max( 1.0f, this->maxBoundingSize * averageImageSize );
@@ -159,6 +159,7 @@ std::vector< PointIR_Point > PointDetectorCV::detect( const uint8_t * image, uns
 
 #ifdef _POINTDETECTORCV__LIVEDEBUG_
 	cv::imshow( "PointDetectorCV", imageDebug );
+	cv::waitKey(1); // need this for event processing - window wouldn't be visible
 #endif
 
 	return points;

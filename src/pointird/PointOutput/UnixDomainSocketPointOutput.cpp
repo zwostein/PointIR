@@ -18,12 +18,13 @@
  */
 
 #include "UnixDomainSocketPointOutput.hpp"
+#include "../exceptions.hpp"
+
+#include <PointIR/PointArray.h>
 
 #include <list>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
-#include <system_error>
 
 #include <string.h>
 #include <unistd.h>
@@ -36,13 +37,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-
-
-#define SYSTEM_ERROR( errornumber, whattext ) \
-std::system_error( (errornumber), std::system_category(), std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
-
-#define RUNTIME_ERROR( whattext ) \
-std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
+#include <malloc.h>
 
 
 class UnixDomainSocketPointOutput::Impl
@@ -55,6 +50,8 @@ public:
 	};
 	Socket local;
 	std::list< Socket > remotes;
+	unsigned int pointArrayBufferSize = 0;
+	PointIR_PointArray * pointArrayBuffer = nullptr;
 };
 
 
@@ -79,14 +76,20 @@ static void unlinkSocket( const std::string & socketPath )
 UnixDomainSocketPointOutput::UnixDomainSocketPointOutput() :
 	pImpl( new Impl )
 {
+	this->pImpl->pointArrayBufferSize = sizeof(PointIR_PointArray) + 8 * sizeof(PointIR_Point);
+	this->pImpl->pointArrayBuffer = (PointIR_PointArray*) calloc( 1, this->pImpl->pointArrayBufferSize );
+	if( !this->pImpl->pointArrayBuffer )
+		throw SYSTEM_ERROR( errno, "calloc" );
+
 	std::stringstream ss;
-	ss << "/tmp/PointIR." << getpid() << ".points.socket";
+//	ss << "/tmp/PointIR." << getpid() << ".points.socket";
+	ss << "/tmp/PointIR.points.socket";
 	this->socketPath = ss.str();
 
 	// delete existing socket if it exists
 	unlinkSocket( this->socketPath );
 
-	this->pImpl->local.fd = socket( AF_UNIX, SOCK_STREAM, 0 );
+	this->pImpl->local.fd = socket( AF_UNIX, SOCK_SEQPACKET, 0 );
 	if( -1 == this->pImpl->local.fd )
 		throw SYSTEM_ERROR( errno, "socket" );
 
@@ -116,7 +119,8 @@ UnixDomainSocketPointOutput::~UnixDomainSocketPointOutput()
 {
 	try
 	{
-		unlinkSocket( socketPath );
+		free( this->pImpl->pointArrayBuffer );
+		unlinkSocket( this->socketPath );
 	}
 	catch( std::exception & ex )
 	{
@@ -131,6 +135,8 @@ UnixDomainSocketPointOutput::~UnixDomainSocketPointOutput()
 
 void UnixDomainSocketPointOutput::outputPoints( const std::vector< PointIR_Point > & points )
 {
+	size_t packetSize = sizeof(PointIR_PointArray) + points.size() * sizeof(PointIR_Point);
+
 	// accept all incoming connections
 	while( true )
 	{
@@ -141,8 +147,8 @@ void UnixDomainSocketPointOutput::outputPoints( const std::vector< PointIR_Point
 		{
 			if( (EAGAIN==errno) || (EWOULDBLOCK==errno) )
 				break; // no incoming connections left
-			else
-				throw SYSTEM_ERROR( errno, "accept" );
+				else
+					throw SYSTEM_ERROR( errno, "accept" );
 		}
 
 		// set remote socket nonblocking
@@ -152,44 +158,56 @@ void UnixDomainSocketPointOutput::outputPoints( const std::vector< PointIR_Point
 		if( -1 == fcntl( newRemote.fd, F_SETFL, flags | O_NONBLOCK ) )
 			throw SYSTEM_ERROR( errno, "fcntl" );
 
+		// resize socket send buffer to fit one frame - doesn't seem necessary for SOCK_SEQPACKET
+		setsockopt( newRemote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->pointArrayBufferSize), sizeof(this->pImpl->pointArrayBufferSize) );
+
 		this->pImpl->remotes.push_back( newRemote );
 	}
 
-	// send current frame - removing remotes on the fly if disconnected
+	// resize packet buffer and socket buffers if needed
+	if( this->pImpl->pointArrayBufferSize < packetSize )
+	{
+		this->pImpl->pointArrayBufferSize = packetSize;
+		this->pImpl->pointArrayBuffer = (PointIR_PointArray*) realloc( this->pImpl->pointArrayBuffer, packetSize );
+		if( !this->pImpl->pointArrayBuffer )
+			throw SYSTEM_ERROR( errno, "realloc" );
+
+		for( auto & remote : this->pImpl->remotes )
+			setsockopt( remote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->pointArrayBufferSize), sizeof(this->pImpl->pointArrayBufferSize) );
+
+		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized buffers to "<< this->pImpl->pointArrayBufferSize << "\n";
+	}
+
+	// copy points
+	this->pImpl->pointArrayBuffer->count = points.size();
+	for( size_t i = 0; i < points.size(); ++i )
+		this->pImpl->pointArrayBuffer->points[i] = points[i];
+
+	// send points packet - removing remotes on the fly if disconnected
 	for( auto it = this->pImpl->remotes.begin(); it != this->pImpl->remotes.end(); )
 	{
-		// send number of points following
-		uint32_t numPoints = points.size();
-		if( -1 == send( it->fd, &numPoints, sizeof(numPoints), MSG_NOSIGNAL ) )
+		ssize_t sent = send( it->fd, this->pImpl->pointArrayBuffer, packetSize, MSG_NOSIGNAL );
+		if( -1 == sent )
 		{
-			if( EPIPE == errno )
-			{
+			if( EPIPE == errno || ECONNRESET == errno )
+			{ // remote closed connection
 				it = this->pImpl->remotes.erase( it );
 				continue;
+			}
+			else if( EAGAIN == errno || EWOULDBLOCK == errno )
+			{ // not enough space left in send buffer
+				std::cerr << std::string(__PRETTY_FUNCTION__) << ": remote for descriptor " << it->fd << " too slow - skipping" << "\n";
 			}
 			else
 				throw SYSTEM_ERROR( errno, "send" );
 		}
-
-		// no need to call send when no points are available
-		if( !points.size() )
-		{
-			++it;
-			continue; // still need to send the number of current points for each remote
+		else if( (size_t)sent != packetSize )
+		{ // incomplete transfer - not handled - disconnect to be safe
+			std::cerr << std::string(__PRETTY_FUNCTION__) << ": incomplete transfer to remote for descriptor " << it->fd << " - sent " << sent << " of " << packetSize << "bytes\n";
+			close( it->fd );
+			it = this->pImpl->remotes.erase( it );
+			continue;
 		}
-
-		// send the actual array of points
-		if( -1 == send( it->fd, points.data(), points.size() * sizeof(PointIR_Point), MSG_NOSIGNAL ) )
-		{
-			if( EPIPE == errno )
-			{
-				it = this->pImpl->remotes.erase( it );
-				continue;
-			}
-			else
-				throw SYSTEM_ERROR( errno, "send" );
-		}
-
 		++it;
 	}
 }

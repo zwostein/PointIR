@@ -17,30 +17,15 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ACAPTURE__INCLUDED_
-#define _ACAPTURE__INCLUDED_
+#ifndef _POINTIR_POINT__INCLUDED_
+#define _POINTIR_POINT__INCLUDED_
 
 
-#include <PointIR/Frame.h>
-
-#include <string>
-
-#include <stdint.h>
-
-
-class ACapture
+typedef struct
 {
-public:
-	virtual void start() = 0;
-	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) = 0;
-	virtual PointIR_Frame * retrieveFrame( PointIR_Frame * reuse = nullptr ) const = 0;
-	virtual void stop() = 0;
-
-	virtual bool isCapturing() const = 0;
-	virtual std::string getName() const = 0;
-	virtual unsigned int getWidth() const = 0;
-	virtual unsigned int getHeight() const = 0;
-};
+	float x;
+	float y;
+} PointIR_Point;
 
 
 #endif

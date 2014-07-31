@@ -32,7 +32,7 @@ public:
 	UnixDomainSocketFrameOutput();
 	~UnixDomainSocketFrameOutput();
 
-	virtual void outputFrame( const uint8_t * image, unsigned int width, unsigned int height ) override;
+	virtual void outputFrame( const PointIR_Frame * frame ) override;
 
 	const std::string & getSocketPath() const { return this->socketPath; }
 

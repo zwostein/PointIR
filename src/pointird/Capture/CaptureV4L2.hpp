@@ -26,8 +26,6 @@
 #include <memory>
 #include <string>
 
-#include <stdint.h>
-
 
 class CaptureV4L2 : public ACapture
 {
@@ -39,7 +37,7 @@ public:
 
 	virtual void start() override;
 	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) override;
-	virtual bool frameAsGreyscale( uint8_t * dst, size_t size ) const override;
+	virtual PointIR_Frame * retrieveFrame( PointIR_Frame * reuse = nullptr ) const override;
 	virtual void stop() override;
 
 	virtual bool isCapturing() const override { return this->capturing; };
@@ -50,7 +48,6 @@ public:
 	std::string getDevice() const { return this->device; }
 	bool canStream() const;
 	bool canCaptureVideo() const;
-
 
 	float getFPS() const { return this->fps; }
 

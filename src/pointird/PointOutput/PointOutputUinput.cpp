@@ -21,11 +21,10 @@
 
 
 #include "PointOutputUinput.hpp"
+#include "../exceptions.hpp"
 
 #include <iostream>
 #include <vector>
-#include <stdexcept>
-#include <system_error>
 
 #include <stdint.h>
 #include <string.h>
@@ -37,13 +36,6 @@
 
 #include <linux/input.h>
 #include <linux/uinput.h>
-
-
-#define SYSTEM_ERROR( errornumber, whattext ) \
-	std::system_error( (errornumber), std::system_category(), std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) );
-
-#define RUNTIME_ERROR( whattext ) \
-	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) );
 
 
 static const int resX = 4096;

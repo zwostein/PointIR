@@ -17,15 +17,29 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _POINT__INCLUDED_
-#define _POINT__INCLUDED_
+#ifndef _POINTIR_FRAME__INCLUDED_
+#define _POINTIR_FRAME__INCLUDED_
 
+
+#include <stdint.h>
+
+
+#if ( __cplusplus && __GNUC__ )
+	//HACK: flexible array members (array[]) are part of C99 but not C++11 and below - however they work with g++, so just disable the warning
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 typedef struct
 {
-	float x;
-	float y;
-} PointIR_Point;
+	uint32_t width;
+	uint32_t height;
+	uint8_t data[];
+} PointIR_Frame;
+
+#if ( __cplusplus && __GNUC__ )
+	#pragma GCC diagnostic pop
+#endif
 
 
 #endif

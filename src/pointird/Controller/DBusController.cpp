@@ -18,6 +18,7 @@
  */
 
 #include "DBusController.hpp"
+#include "../exceptions.hpp"
 
 #include "../Processor.hpp"
 #include "../Unprojector/AAutoUnprojector.hpp"
@@ -32,7 +33,6 @@
 #include <map>
 #include <functional>
 #include <typeinfo>
-#include <stdexcept>
 
 #include <string.h>
 
@@ -46,9 +46,6 @@ template< typename T > struct nameof {};
 NAME_CLASS( UnixDomainSocketPointOutput );
 NAME_CLASS( UnixDomainSocketFrameOutput );
 */
-
-#define RUNTIME_ERROR( whattext ) \
-	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
 
 #define DBUS_ERROR( connection, message, errorName, text ) \
 	dbusError( connection, message, errorName, text, std::string(__PRETTY_FUNCTION__) )

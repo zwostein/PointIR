@@ -21,7 +21,8 @@
 #define _AUNPROJECTOR__INCLUDED_
 
 
-#include "Point.h"
+#include <PointIR/Point.h>
+#include <PointIR/Frame.h>
 
 #include <stdint.h>
 

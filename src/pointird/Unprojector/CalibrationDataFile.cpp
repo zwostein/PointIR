@@ -18,7 +18,6 @@
  */
 
 #include "CalibrationDataFile.hpp"
-
 #include "AUnprojector.hpp"
 
 #include <iostream>

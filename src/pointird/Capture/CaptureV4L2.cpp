@@ -18,11 +18,12 @@
  */
 
 #include "CaptureV4L2.hpp"
+#include "../exceptions.hpp"
+
+#include <PointIR/Frame.h>
 
 #include <iostream>
 #include <vector>
-#include <stdexcept>
-#include <system_error>
 #include <limits>
 
 #include <stdint.h>
@@ -36,13 +37,7 @@
 #include <sys/mman.h>
 
 #include <linux/videodev2.h>
-
-
-#define SYSTEM_ERROR( errornumber, whattext ) \
-	std::system_error( (errornumber), std::system_category(), std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
-
-#define RUNTIME_ERROR( whattext ) \
-	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
+#include <malloc.h>
 
 
 // Based upon: http://rosettacode.org/wiki/Convert_decimal_number_to_rational
@@ -432,21 +427,35 @@ unsigned int CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 }
 
 
-bool CaptureV4L2::frameAsGreyscale( uint8_t * dst, size_t size ) const
+PointIR_Frame * CaptureV4L2::retrieveFrame( PointIR_Frame * frame ) const
 {
 	if( this->pImpl->currentBuffer < 0 )
 	{
-		std::cerr << "\"" << this->device << "\": " << "no buffer available\n";
-		return false;
+		std::cerr << std::string(__PRETTY_FUNCTION__) << ": no buffer available\n";
+		return frame;
 	}
 
-	if( size < this->width * this->height )
-	{
-		std::cerr << "\"" << this->device << "\": " << "insufficient memory for grayscale image\n";
-		return false;
+	if( !frame )
+	{ // no frame to reuse given? create one!
+		frame = (PointIR_Frame*) malloc( sizeof(PointIR_Frame) + this->width * this->height );
+		if( !frame )
+			throw SYSTEM_ERROR( errno, "malloc" );
+		frame->width = this->width;
+		frame->height = this->height;
+		std::cerr << std::string(__PRETTY_FUNCTION__) << ": created new frame ("<< this->width << "x" << this->height << ")\n";
+	}
+	else if( (frame->width != this->width) || (frame->height != this->height) )
+	{ // frame for reuse given but has different size? resize!
+		frame = (PointIR_Frame*) realloc( frame, sizeof(PointIR_Frame) + this->width * this->height );
+		if( !frame )
+			throw SYSTEM_ERROR( errno, "realloc" );
+		frame->width = this->width;
+		frame->height = this->height;
+		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized frame to "<< this->width << "x" << this->height << "\n";
 	}
 
 	uint8_t * src = static_cast<uint8_t*>( this->pImpl->buffers[this->pImpl->currentBuffer].start );
+	uint8_t * dst = frame->data;
 
 	// copy greyscale component to destination buffer
 	for( unsigned int h = 0; h < this->height; h++ )
@@ -459,7 +468,7 @@ bool CaptureV4L2::frameAsGreyscale( uint8_t * dst, size_t size ) const
 		}
 		src += this->pImpl->bytesPerLine - ( this->width * 2 );
 	}
-	return true;
+	return frame;
 }
 
 

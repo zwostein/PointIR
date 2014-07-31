@@ -21,13 +21,15 @@
 #define _AFRAMEOUTPUT__INCLUDED_
 
 
+#include <PointIR/Frame.h>
+
 #include <stdint.h>
 
 
 class AFrameOutput
 {
 public:
-	virtual void outputFrame( const uint8_t * image, unsigned int width, unsigned int height ) = 0;
+	virtual void outputFrame( const PointIR_Frame * frame ) = 0;
 };
 
 

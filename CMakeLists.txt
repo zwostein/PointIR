@@ -22,6 +22,7 @@ add_executable( ${EXECUTABLE_NAME}
 )
 
 include_directories( "${CMAKE_SOURCE_DIR}/src" )
+include_directories( "${CMAKE_SOURCE_DIR}/include" )
 
 # configure compiler for c++11 etc.
 if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )

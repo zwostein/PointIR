@@ -22,7 +22,8 @@
 
 
 #include "AAutoUnprojector.hpp"
-#include "Point.h"
+
+#include <PointIR/Point.h>
 
 #include <memory>
 

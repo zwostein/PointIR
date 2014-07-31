@@ -21,7 +21,7 @@
 #define _APOINTFILTER__INCLUDED_
 
 
-#include "Point.h"
+#include <PointIR/Point.h>
 
 #include <vector>
 

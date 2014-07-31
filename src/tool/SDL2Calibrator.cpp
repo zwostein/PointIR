@@ -17,6 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <PointIR/Frame.h>
+
 #include <SDL.h>
 #include <dbus/dbus.h>
 
@@ -45,18 +47,6 @@
 
 #define RUNTIME_ERROR( whattext ) \
 	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
-
-
-//HACK: flexible array members (char array[]) are part of C99 but not C++11 and below - however they work with g++, so just disable the warning
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-typedef struct
-{
-	uint32_t width;
-	uint32_t height;
-	uint8_t data[];
-} PointIR_Frame;
-#pragma GCC diagnostic pop
 
 
 constexpr static const char * dBusName = "PointIR.Calibrator";

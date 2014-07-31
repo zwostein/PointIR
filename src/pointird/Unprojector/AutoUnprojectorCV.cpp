@@ -178,6 +178,7 @@ bool AutoUnprojectorCV::calibrate( const uint8_t * greyImage, unsigned int width
 #ifdef _AUTOUNPROJECTORCV__LIVEDEBUG_
 	cv::drawChessboardCorners( image, cv::Size( chessboardNumCornersX, chessboardNumCornersY ), imagePoints, found );
 	cv::imshow( "AutoUnprojectorCV", image );
+	cv::waitKey(1); // need this for event processing - window wouldn't be visible
 #endif
 
 	if( !found )

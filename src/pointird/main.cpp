@@ -18,11 +18,10 @@
  */
 
 #include <iostream>
-#include <fstream>
-#include <iterator>
 
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 #include <tclap/CmdLine.h>
 
@@ -51,7 +50,7 @@ static volatile bool running = true;
 
 void shutdownHandler( int s )
 {
-	std::cerr << "Received signal " << s << ", shutting down\n";
+	std::cerr << "Received signal " << s << " \"" << strsignal(s) << "\", shutting down!\n";
 	running = false;
 }
 
@@ -149,14 +148,14 @@ int main( int argc, char ** argv )
 	UnixDomainSocketFrameOutput unixDomainSocketFrameOutput;
 	processor.addFrameOutput( &unixDomainSocketFrameOutput );
 
-//	DebugPointOutputCV debugPointOutputCV( processor );
-//	processor.addOutput( &debugPointOutputCV );
+	DebugPointOutputCV debugPointOutputCV( processor );
+	processor.addPointOutput( &debugPointOutputCV );
 
 	UnixDomainSocketPointOutput unixDomainSocketPointOutput;
 	processor.addPointOutput( &unixDomainSocketPointOutput );
 
-	PointOutputUinput pointOutputUinput;
-	processor.addPointOutput( &pointOutputUinput );
+//	PointOutputUinput pointOutputUinput;
+//	processor.addPointOutput( &pointOutputUinput );
 
 	////////////////////////////////////////////////////////////////
 

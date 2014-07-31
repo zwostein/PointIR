@@ -18,8 +18,8 @@
  */
 
 #include "CalibrationImageFile.hpp"
-
 #include "AAutoUnprojector.hpp"
+#include "../exceptions.hpp"
 
 #include <lodepng.h>
 
@@ -27,16 +27,11 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
-#include <stdexcept>
 
 #include <unistd.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
-
-
-#define RUNTIME_ERROR( whattext ) \
-	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
 
 
 static bool fileExists( const std::string & name )

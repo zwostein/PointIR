@@ -21,6 +21,8 @@
 #define _PROCESSOR__INCLUDED_
 
 
+#include <PointIR/Frame.h>
+
 #include <stdint.h>
 
 #include <memory>
@@ -73,9 +75,7 @@ public:
 	void setPointFilter( APointFilter * pointFilter );
 	APointFilter * getPointFilter() const;
 
-	const std::vector< uint8_t > & getProcessedFrame() const;
-	unsigned int getFrameWidth() const;
-	unsigned int getFrameHeight() const;
+	const PointIR_Frame * getProcessedFrame() const { return this->frame; }
 
 private:
 	class Impl;
@@ -84,6 +84,8 @@ private:
 	ACapture & capture;
 	APointDetector & detector;
 	AUnprojector & unprojector;
+
+	PointIR_Frame * frame = nullptr;
 };
 
 

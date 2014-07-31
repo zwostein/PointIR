@@ -19,7 +19,6 @@
 
 #include "Processor.hpp"
 
-#include "Point.h"
 #include "Capture/ACapture.hpp"
 #include "FrameOutput/AFrameOutput.hpp"
 #include "PointDetector/APointDetector.hpp"
@@ -28,7 +27,11 @@
 #include "PointFilter/APointFilter.hpp"
 #include "PointOutput/APointOutput.hpp"
 
+#include <PointIR/Point.h>
 
+#include <malloc.h>
+
+#include <iostream>
 #include <set>
 
 
@@ -41,10 +44,6 @@ public:
 	std::set< APointOutput * > pointOutputs;
 	bool frameOutputEnabled = true;
 	bool pointOutputEnabled = true;
-
-	std::vector< uint8_t > image;
-	unsigned int width = 0;
-	unsigned int height = 0;
 
 	std::function< void(bool) > calibrationResultCallback;
 	std::function< void(void) > calibrationBeginCallback;
@@ -78,6 +77,7 @@ Processor::Processor( ACapture & capture, APointDetector & detector, AUnprojecto
 
 Processor::~Processor()
 {
+	free( this->frame );
 }
 
 
@@ -85,10 +85,8 @@ void Processor::start()
 {
 	if( this->isProcessing() )
 		return;
+
 	this->capture.start();
-	this->pImpl->width = this->capture.getWidth();
-	this->pImpl->height = this->capture.getHeight();
-	this->pImpl->image.resize( this->pImpl->width * this->pImpl->height );
 }
 
 
@@ -112,12 +110,12 @@ void Processor::processFrame()
 		return;
 
 	this->capture.advanceFrame();
-	this->capture.frameAsGreyscale( this->pImpl->image.data(), this->pImpl->image.size() );
+	this->frame = this->capture.retrieveFrame( this->frame );
 
 	if( this->pImpl->frameOutputEnabled )
 	{
 		for( AFrameOutput * output : this->pImpl->frameOutputs )
-		output->outputFrame( this->pImpl->image.data(), this->pImpl->width, this->pImpl->height );
+		output->outputFrame( this->frame );
 	}
 
 	if( this->isCalibrating() )
@@ -125,7 +123,7 @@ void Processor::processFrame()
 		//TODO: as soon as there are multiple ways for calibrating, move the calibration logic to an external module/class
 		if( AAutoUnprojector * autoUnprojector = dynamic_cast<AAutoUnprojector*>( &(this->unprojector) ) )
 		{
-			bool result = autoUnprojector->calibrate( this->pImpl->image.data(), this->pImpl->width, this->pImpl->height );
+			bool result = autoUnprojector->calibrate( this->frame->data, this->frame->width, this->frame->height );
 			//TODO: maybe keep trying to calibrate for a few frames until calling back
 			this->pImpl->endCalibration( result );
 		}
@@ -137,7 +135,7 @@ void Processor::processFrame()
 	}
 	else
 	{
-		std::vector< PointIR_Point > points = detector.detect( this->pImpl->image.data(), this->pImpl->width, this->pImpl->height );
+		std::vector< PointIR_Point > points = detector.detect( this->frame );
 
 		this->unprojector.unproject( points );
 
@@ -247,22 +245,4 @@ void Processor::setPointFilter( APointFilter * pointFilter )
 APointFilter * Processor::getPointFilter() const
 {
 	return this->pImpl->filter;
-}
-
-
-const std::vector< uint8_t > & Processor::getProcessedFrame() const
-{
-	return this->pImpl->image;
-}
-
-
-unsigned int Processor::getFrameWidth() const
-{
-	return this->pImpl->width;
-}
-
-
-unsigned int Processor::getFrameHeight() const
-{
-	return this->pImpl->height;
 }

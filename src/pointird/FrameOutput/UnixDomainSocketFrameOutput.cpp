@@ -18,12 +18,13 @@
  */
 
 #include "UnixDomainSocketFrameOutput.hpp"
+#include "../exceptions.hpp"
+
+#include <PointIR/Frame.h>
 
 #include <list>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
-#include <system_error>
 
 #include <string.h>
 #include <unistd.h>
@@ -39,25 +40,6 @@
 #include <malloc.h>
 
 
-#define SYSTEM_ERROR( errornumber, whattext ) \
-	std::system_error( (errornumber), std::system_category(), std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
-
-#define RUNTIME_ERROR( whattext ) \
-	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
-
-
-//HACK: flexible array members (char array[]) are part of C99 but not C++11 and below - however they work with g++, so just disable the warning
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-typedef struct
-{
-	uint32_t width;
-	uint32_t height;
-	uint8_t data[];
-} PointIR_Frame;
-#pragma GCC diagnostic pop
-
-
 class UnixDomainSocketFrameOutput::Impl
 {
 public:
@@ -68,7 +50,7 @@ public:
 	};
 	Socket local;
 	std::list< Socket > remotes;
-	PointIR_Frame * buffer;
+	unsigned int socketBufferSize = 0;
 };
 
 
@@ -93,10 +75,6 @@ static void unlinkSocket( const std::string & socketPath )
 UnixDomainSocketFrameOutput::UnixDomainSocketFrameOutput() :
 	pImpl( new Impl )
 {
-	this->pImpl->buffer = (PointIR_Frame*) calloc( 1, sizeof(PointIR_Frame) );
-	if( !this->pImpl->buffer)
-		throw SYSTEM_ERROR( errno, "calloc" );
-
 	std::stringstream ss;
 //	ss << "/tmp/PointIR." << getpid() << ".video.socket";
 	ss << "/tmp/PointIR.video.socket";
@@ -135,7 +113,6 @@ UnixDomainSocketFrameOutput::~UnixDomainSocketFrameOutput()
 {
 	try
 	{
-		free( this->pImpl->buffer );
 		unlinkSocket( this->socketPath );
 	}
 	catch( std::exception & ex )
@@ -149,11 +126,18 @@ UnixDomainSocketFrameOutput::~UnixDomainSocketFrameOutput()
 }
 
 
-void UnixDomainSocketFrameOutput::outputFrame( const uint8_t * image, unsigned int width, unsigned int height )
+void UnixDomainSocketFrameOutput::outputFrame( const PointIR_Frame * frame )
 {
-	size_t size = width * height;
-	if( !size )
-		return;
+	size_t packetSize = sizeof(PointIR_Frame) + frame->width * frame->height;
+
+	// resize socket buffers if needed - doesn't seem necessary for SOCK_SEQPACKET
+	if( this->pImpl->socketBufferSize != packetSize )
+	{
+		this->pImpl->socketBufferSize = packetSize;
+		for( auto & remote : this->pImpl->remotes )
+			setsockopt( remote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->socketBufferSize), sizeof(this->pImpl->socketBufferSize) );
+		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized socket send buffers to "<< this->pImpl->socketBufferSize << "\n";
+	}
 
 	// accept all incoming connections
 	while( true )
@@ -177,38 +161,15 @@ void UnixDomainSocketFrameOutput::outputFrame( const uint8_t * image, unsigned i
 			throw SYSTEM_ERROR( errno, "fcntl" );
 
 		// resize socket send buffer to fit one frame - doesn't seem necessary for SOCK_SEQPACKET
-		int sndbuf = sizeof(PointIR_Frame) + size;
-		setsockopt( newRemote.fd, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(int) );
+		setsockopt( newRemote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->socketBufferSize), sizeof(this->pImpl->socketBufferSize) );
 
 		this->pImpl->remotes.push_back( newRemote );
 	}
 
-	// resize packet buffer if needed
-	if( (this->pImpl->buffer->width != width) || (this->pImpl->buffer->height != height) )
-	{
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resizing buffer to "<< width << "x" << height << "\n";
-
-		// resize packet buffer
-		this->pImpl->buffer = (PointIR_Frame*) realloc( this->pImpl->buffer, sizeof(PointIR_Frame) + size );
-		if( !this->pImpl->buffer )
-			throw SYSTEM_ERROR( errno, "realloc" );
-		this->pImpl->buffer->width = width;
-		this->pImpl->buffer->height = height;
-
-		// resize socket buffers - doesn't seem necessary for SOCK_SEQPACKET
-		int sndbuf = sizeof(PointIR_Frame) + size;
-		for( auto & remote : this->pImpl->remotes )
-			setsockopt( remote.fd, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(int) );
-
-	}
-
-	// copy frame to packet buffer
-	memcpy( this->pImpl->buffer->data, image, size );
-
 	// send frame packet - removing remotes on the fly if disconnected
 	for( auto it = this->pImpl->remotes.begin(); it != this->pImpl->remotes.end(); )
 	{
-		ssize_t sent = send( it->fd, this->pImpl->buffer, sizeof(PointIR_Frame) + size, MSG_NOSIGNAL );
+		ssize_t sent = send( it->fd, frame, packetSize, MSG_NOSIGNAL );
 		if( -1 == sent )
 		{
 			if( EPIPE == errno || ECONNRESET == errno )
@@ -218,14 +179,14 @@ void UnixDomainSocketFrameOutput::outputFrame( const uint8_t * image, unsigned i
 			}
 			else if( EAGAIN == errno || EWOULDBLOCK == errno )
 			{ // not enough space left in send buffer
-				std::cerr << std::string(__PRETTY_FUNCTION__) << ": remote for descriptor " << it->fd << " too slow - skipping" << "\n";
+//				std::cerr << std::string(__PRETTY_FUNCTION__) << ": remote for descriptor " << it->fd << " too slow - skipping" << "\n";
 			}
 			else
 				throw SYSTEM_ERROR( errno, "send" );
 		}
-		else if( (size_t)sent != sizeof(PointIR_Frame) + size )
+		else if( (size_t)sent != packetSize )
 		{ // incomplete transfer - not handled - disconnect to be safe
-			std::cerr << std::string(__PRETTY_FUNCTION__) << ": incomplete transfer to remote for descriptor " << it->fd << " - sent " << sent << " of " << (sizeof(PointIR_Frame) + size) << "bytes\n";
+			std::cerr << std::string(__PRETTY_FUNCTION__) << ": incomplete transfer to remote for descriptor " << it->fd << " - sent " << sent << " of " << packetSize << "bytes\n";
 			close( it->fd );
 			it = this->pImpl->remotes.erase( it );
 			continue;
