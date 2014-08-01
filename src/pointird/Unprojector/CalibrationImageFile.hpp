@@ -33,13 +33,19 @@ public:
 	CalibrationImageFile( AAutoUnprojector & unprojector, unsigned int width, unsigned int height );
 	~CalibrationImageFile();
 
-	std::string getFilename() const;
+	std::string getFilename() const { return this->filename; }
 	bool generate();
 
+	static void setDirectory( const std::string & directory );
+	static const std::string & getDirectory() { return CalibrationImageFile::directory; }
+
 private:
+	static std::string directory;
+
 	AAutoUnprojector & unprojector;
 	unsigned int width = 256;
 	unsigned int height = 256;
+	std::string filename;
 };
 
 

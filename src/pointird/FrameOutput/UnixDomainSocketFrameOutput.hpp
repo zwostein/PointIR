@@ -37,7 +37,12 @@ public:
 
 	const std::string & getSocketPath() const { return this->socketPath; }
 
+	static void setDirectory( const std::string & directory );
+	static const std::string & getDirectory() { return UnixDomainSocketFrameOutput::directory; }
+
 private:
+	static std::string directory;
+
 	std::string socketPath;
 	class Impl;
 	std::unique_ptr< Impl > pImpl;

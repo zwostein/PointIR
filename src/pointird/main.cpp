@@ -18,6 +18,8 @@
  */
 
 #include <iostream>
+#include <vector>
+#include <map>
 
 #include <unistd.h>
 #include <signal.h>
@@ -67,6 +69,60 @@ void calibrationEnd()
 }
 
 
+
+class PointOutputAdder
+{
+public:
+	PointOutputAdder()
+	{
+		pointOutputMap.insert( { "uinput", [] ()
+			{ return new PointOutputUinput; }
+		} );
+		pointOutputMap.insert( { "socket", [] ()
+			{ return new UnixDomainSocketPointOutput; }
+		} );
+		pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *
+			{
+				if( this->processor )
+					return new DebugPointOutputCV( *(this->processor) );
+				else
+					return nullptr;
+			}
+		} );
+	}
+
+	void setProcessor( Processor * processor ) { this->processor = processor; }
+
+	bool add( const std::string & name )
+	{
+		if( !this->processor )
+			return false;
+		PointOutputMap::const_iterator it = this->pointOutputMap.find( name );
+		if( it == this->pointOutputMap.end() )
+			return false;
+		APointOutput * output = it->second();
+		if( !output )
+			return false;
+		processor->addPointOutput( output );
+		return true;
+	}
+
+	std::vector< std::string > getAvailableOutputs()
+	{
+		std::vector< std::string > outputs;
+		for( PointOutputMap::const_iterator it = pointOutputMap.begin(); it != pointOutputMap.end(); ++it )
+			outputs.push_back( it->first );
+		return outputs;
+	}
+
+private:
+	Processor * processor;
+	typedef std::map< std::string, std::function< APointOutput*(void) > > PointOutputMap;
+	PointOutputMap pointOutputMap;
+};
+
+
+
 int main( int argc, char ** argv )
 {
 	////////////////////////////////////////////////////////////////
@@ -75,8 +131,17 @@ int main( int argc, char ** argv )
 	int width = 320;
 	int height = 240;
 	float fps = 30.0f;
+	std::vector<std::string> outputs( {"uinput", "socket"} );
 	////////////////////////////////////////////////////////////////
 
+	PointOutputAdder outputAdder;
+	std::vector< std::string > availableOutputs = outputAdder.getAvailableOutputs();
+	TCLAP::ValuesConstraint<std::string> outputsConstraint( availableOutputs );
+
+	std::string defaultOutputsAsArgument;
+	for( std::string & output : outputs )
+		defaultOutputsAsArgument += "-o " + output + " ";
+	defaultOutputsAsArgument.pop_back();
 
 	////////////////////////////////////////////////////////////////
 	// signal setup
@@ -104,10 +169,30 @@ int main( int argc, char ** argv )
 			__DATE__ // version
 		);
 
-		TCLAP::ValueArg<std::string> deviceArg( "d",  "device", "Camera device",                       false, device, "string", cmd );
-		TCLAP::ValueArg<int>          widthArg( "",   "width",  "Width of captured video stream",      false, width,  "int",    cmd );
-		TCLAP::ValueArg<int>         heigthArg( "",   "height", "Height of captured video stream",     false, height, "int",    cmd );
-		TCLAP::ValueArg<float>          fpsArg( "",   "fps",    "Frame rate of captured video stream", false, fps,    "float",  cmd );
+		TCLAP::ValueArg<std::string> deviceArg(
+			"d", "device",
+			"The camera device used to capture the video stream.\nDefaults to \"" + device + "\"",
+			false, device, "string", cmd );
+
+		TCLAP::ValueArg<int> widthArg(
+			"", "width",
+			"Width of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(width),
+			false, width, "int",    cmd );
+
+		TCLAP::ValueArg<int> heigthArg(
+			"", "height",
+			"Height of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(height),
+			false, height, "int",    cmd );
+
+		TCLAP::ValueArg<float> fpsArg(
+			"", "fps",
+			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(fps),
+			false, fps, "float",  cmd );
+
+		TCLAP::MultiArg<std::string> outputsArg(
+			"o",  "output",
+			"Adds one or more output method.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
+			false, &outputsConstraint, cmd );
 
 		cmd.parse( argc, argv );
 
@@ -115,6 +200,8 @@ int main( int argc, char ** argv )
 		width = widthArg.getValue();
 		height = heigthArg.getValue();
 		fps = fpsArg.getValue();
+		if( !outputsArg.getValue().empty() )
+			outputs = outputsArg.getValue();
 	}
 	catch( TCLAP::ArgException & e )
 	{
@@ -148,14 +235,18 @@ int main( int argc, char ** argv )
 	UnixDomainSocketFrameOutput unixDomainSocketFrameOutput;
 	processor.addFrameOutput( &unixDomainSocketFrameOutput );
 
-	DebugPointOutputCV debugPointOutputCV( processor );
-	processor.addPointOutput( &debugPointOutputCV );
+//	DebugPointOutputCV debugPointOutputCV( processor );
+//	processor.addPointOutput( &debugPointOutputCV );
 
-	UnixDomainSocketPointOutput unixDomainSocketPointOutput;
-	processor.addPointOutput( &unixDomainSocketPointOutput );
+//	UnixDomainSocketPointOutput unixDomainSocketPointOutput;
+//	processor.addPointOutput( &unixDomainSocketPointOutput );
 
 //	PointOutputUinput pointOutputUinput;
 //	processor.addPointOutput( &pointOutputUinput );
+
+	outputAdder.setProcessor( &processor );
+	for( std::string & output : outputs )
+		outputAdder.add( output );
 
 	////////////////////////////////////////////////////////////////
 

@@ -28,10 +28,12 @@
 #include <fstream>
 #include <vector>
 
-#include <unistd.h>
-
 #include <sys/stat.h>
 #include <sys/types.h>
+
+
+// the default directory
+std::string CalibrationImageFile::directory = "/tmp/";
 
 
 static bool fileExists( const std::string & name )
@@ -41,23 +43,25 @@ static bool fileExists( const std::string & name )
 }
 
 
+void CalibrationImageFile::setDirectory( const std::string & directory )
+{
+	CalibrationImageFile::directory = directory;
+	if( !CalibrationImageFile::directory.empty() && CalibrationImageFile::directory.back() != '/' )
+		CalibrationImageFile::directory += '/';
+}
+
+
 CalibrationImageFile::CalibrationImageFile( AAutoUnprojector & unprojector, unsigned int width, unsigned int height ) :
 	unprojector(unprojector), width(width), height(height)
 {
+	std::stringstream ss;
+	ss << CalibrationImageFile::directory << "PointIR." << this->width << "x" << this->height << ".png";
+	this->filename = ss.str();
 }
 
 
 CalibrationImageFile::~CalibrationImageFile()
 {
-}
-
-
-std::string CalibrationImageFile::getFilename() const
-{
-	std::stringstream ss;
-//	ss << "/tmp/PointIR." << getpid() << "." << this->width << "x" << this->height << ".png";
-	ss << "/tmp/PointIR." << this->width << "x" << this->height << ".png";
-	return ss.str();
 }
 
 

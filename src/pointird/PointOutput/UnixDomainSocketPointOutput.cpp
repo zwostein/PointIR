@@ -40,6 +40,18 @@
 #include <malloc.h>
 
 
+// the default directory
+std::string UnixDomainSocketPointOutput::directory = "/tmp/";
+
+
+void UnixDomainSocketPointOutput::setDirectory( const std::string & directory )
+{
+	UnixDomainSocketPointOutput::directory = directory;
+	if( !UnixDomainSocketPointOutput::directory.empty() && UnixDomainSocketPointOutput::directory.back() != '/' )
+		UnixDomainSocketPointOutput::directory += '/';
+}
+
+
 class UnixDomainSocketPointOutput::Impl
 {
 public:
@@ -82,8 +94,7 @@ UnixDomainSocketPointOutput::UnixDomainSocketPointOutput() :
 		throw SYSTEM_ERROR( errno, "calloc" );
 
 	std::stringstream ss;
-//	ss << "/tmp/PointIR." << getpid() << ".points.socket";
-	ss << "/tmp/PointIR.points.socket";
+	ss << UnixDomainSocketPointOutput::directory << "PointIR.points.socket";
 	this->socketPath = ss.str();
 
 	// delete existing socket if it exists

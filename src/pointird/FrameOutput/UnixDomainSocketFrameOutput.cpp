@@ -40,6 +40,18 @@
 #include <malloc.h>
 
 
+// the default directory
+std::string UnixDomainSocketFrameOutput::directory = "/tmp/";
+
+
+void UnixDomainSocketFrameOutput::setDirectory( const std::string & directory )
+{
+	UnixDomainSocketFrameOutput::directory = directory;
+	if( !UnixDomainSocketFrameOutput::directory.empty() && UnixDomainSocketFrameOutput::directory.back() != '/' )
+		UnixDomainSocketFrameOutput::directory += '/';
+}
+
+
 class UnixDomainSocketFrameOutput::Impl
 {
 public:

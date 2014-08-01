@@ -22,10 +22,11 @@
 
 
 #include <PointIR/Point.h>
+#include <stdint.h>
 
 
+//HACK: flexible array members (array[]) are part of C99 but not C++11 and below - however they work with g++, so just disable the warning
 #if ( __cplusplus && __GNUC__ )
-	//HACK: flexible array members (array[]) are part of C99 but not C++11 and below - however they work with g++, so just disable the warning
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-pedantic"
 #endif

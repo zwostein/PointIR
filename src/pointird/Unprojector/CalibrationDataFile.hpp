@@ -21,6 +21,9 @@
 #define _CALIBRATIONDATAFILE__INCLUDED_
 
 
+#include <string>
+
+
 class AUnprojector;
 
 
@@ -36,7 +39,11 @@ public:
 	static bool load( AUnprojector & unprojector );
 	static bool save( const AUnprojector & unprojector );
 
+	static void setDirectory( const std::string & directory );
+	static const std::string & getDirectory() { return CalibrationDataFile::directory; }
+
 private:
+	static std::string directory;
 	AUnprojector & unprojector;
 };
 

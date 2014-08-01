@@ -25,9 +25,21 @@
 #include <vector>
 
 
+// the default directory
+std::string CalibrationDataFile::directory = "/tmp/";
+
+
 static std::string getCalibrationDataFileName( const AUnprojector & unprojector )
 {
-	return std::string("/tmp/PointIR.calib");
+	return CalibrationDataFile::getDirectory() + std::string("PointIR.calib");
+}
+
+
+void CalibrationDataFile::setDirectory( const std::string & directory )
+{
+	CalibrationDataFile::directory = directory;
+	if( !CalibrationDataFile::directory.empty() && CalibrationDataFile::directory.back() != '/' )
+		CalibrationDataFile::directory += '/';
 }
 
 
