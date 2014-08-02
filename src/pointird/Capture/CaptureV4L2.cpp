@@ -276,7 +276,7 @@ CaptureV4L2::CaptureV4L2( const std::string & device, unsigned int width, unsign
 		throw SYSTEM_ERROR( errno, "ioctl(\"" + this->device + "\",VIDIOC_REQBUFS)" );
 
 	if( req.count < this->pImpl->minBufferCount )
-		throw RUNTIME_ERROR( "CaptureV4L2: \"" + this->device + "\": Could not acquire required buffers - requested "
+		throw RUNTIME_ERROR( "\"" + this->device + "\": Could not acquire required buffers - requested "
 			+ std::to_string(this->pImpl->minBufferCount) + " got " + std::to_string(req.count) );
 
 	for( size_t i = 0; i < req.count; ++i )
@@ -431,7 +431,7 @@ PointIR_Frame * CaptureV4L2::retrieveFrame( PointIR_Frame * frame ) const
 {
 	if( this->pImpl->currentBuffer < 0 )
 	{
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": no buffer available\n";
+		std::cerr << "CaptureV4L2: no buffer available\n";
 		return frame;
 	}
 
@@ -442,7 +442,7 @@ PointIR_Frame * CaptureV4L2::retrieveFrame( PointIR_Frame * frame ) const
 			throw SYSTEM_ERROR( errno, "malloc" );
 		frame->width = this->width;
 		frame->height = this->height;
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": created new frame ("<< this->width << "x" << this->height << ")\n";
+		std::cerr << "CaptureV4L2: created new frame buffer ("<< this->width << "x" << this->height << ")\n";
 	}
 	else if( (frame->width != this->width) || (frame->height != this->height) )
 	{ // frame for reuse given but has different size? resize!
@@ -451,7 +451,7 @@ PointIR_Frame * CaptureV4L2::retrieveFrame( PointIR_Frame * frame ) const
 			throw SYSTEM_ERROR( errno, "realloc" );
 		frame->width = this->width;
 		frame->height = this->height;
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized frame to "<< this->width << "x" << this->height << "\n";
+		std::cerr << "CaptureV4L2: resized frame buffer to "<< this->width << "x" << this->height << "\n";
 	}
 
 	uint8_t * src = static_cast<uint8_t*>( this->pImpl->buffers[this->pImpl->currentBuffer].start );

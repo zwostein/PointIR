@@ -19,7 +19,6 @@
 
 #include <iostream>
 #include <vector>
-#include <map>
 
 #include <unistd.h>
 #include <signal.h>
@@ -29,23 +28,20 @@
 
 #include "Controller/DBusController.hpp"
 #include "Capture/CaptureV4L2.hpp"
-#include "FrameOutput/UnixDomainSocketFrameOutput.hpp"
 #include "PointDetector/PointDetectorCV.hpp"
 #include "Unprojector/AutoUnprojectorCV.hpp"
 #include "Unprojector/CalibrationDataFile.hpp"
 #include "PointFilter/OffscreenFilter.hpp"
 #include "PointFilter/PointFilterChain.hpp"
-#include "PointOutput/DebugPointOutputCV.hpp"
-#include "PointOutput/PointOutputUinput.hpp"
-#include "PointOutput/UnixDomainSocketPointOutput.hpp"
 #include "Processor.hpp"
+#include "OutputAdder.hpp"
 
 
 static const char * notice =
 "PointIR Daemon (compiled " __TIME__ ", " __DATE__ " )\n"
 "This program processes a video stream to detect bright spots that are interpreted as \"touches\" for an emulated absolute pointing device (Touchscreen).\n"
-"Copyright © 2014 Tobias Himmer <provisorisch@online.de>\n"
-"";
+"Copyright © 2014 Tobias Himmer <provisorisch@online.de>";
+
 
 static volatile bool running = true;
 
@@ -57,6 +53,7 @@ void shutdownHandler( int s )
 }
 
 
+//TODO: implement calibration callbacks using a configurable system() call
 void calibrationBegin()
 {
 	std::cerr << "calibrationBegin\n";
@@ -67,60 +64,6 @@ void calibrationEnd()
 {
 	std::cerr << "calibrationEnd\n";
 }
-
-
-
-class PointOutputAdder
-{
-public:
-	PointOutputAdder()
-	{
-		pointOutputMap.insert( { "uinput", [] ()
-			{ return new PointOutputUinput; }
-		} );
-		pointOutputMap.insert( { "socket", [] ()
-			{ return new UnixDomainSocketPointOutput; }
-		} );
-		pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *
-			{
-				if( this->processor )
-					return new DebugPointOutputCV( *(this->processor) );
-				else
-					return nullptr;
-			}
-		} );
-	}
-
-	void setProcessor( Processor * processor ) { this->processor = processor; }
-
-	bool add( const std::string & name )
-	{
-		if( !this->processor )
-			return false;
-		PointOutputMap::const_iterator it = this->pointOutputMap.find( name );
-		if( it == this->pointOutputMap.end() )
-			return false;
-		APointOutput * output = it->second();
-		if( !output )
-			return false;
-		processor->addPointOutput( output );
-		return true;
-	}
-
-	std::vector< std::string > getAvailableOutputs()
-	{
-		std::vector< std::string > outputs;
-		for( PointOutputMap::const_iterator it = pointOutputMap.begin(); it != pointOutputMap.end(); ++it )
-			outputs.push_back( it->first );
-		return outputs;
-	}
-
-private:
-	Processor * processor;
-	typedef std::map< std::string, std::function< APointOutput*(void) > > PointOutputMap;
-	PointOutputMap pointOutputMap;
-};
-
 
 
 int main( int argc, char ** argv )
@@ -134,14 +77,6 @@ int main( int argc, char ** argv )
 	std::vector<std::string> outputs( {"uinput", "socket"} );
 	////////////////////////////////////////////////////////////////
 
-	PointOutputAdder outputAdder;
-	std::vector< std::string > availableOutputs = outputAdder.getAvailableOutputs();
-	TCLAP::ValuesConstraint<std::string> outputsConstraint( availableOutputs );
-
-	std::string defaultOutputsAsArgument;
-	for( std::string & output : outputs )
-		defaultOutputsAsArgument += "-o " + output + " ";
-	defaultOutputsAsArgument.pop_back();
 
 	////////////////////////////////////////////////////////////////
 	// signal setup
@@ -161,6 +96,18 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 	// process command line options
+
+	// create a list of available outputs that can be added later
+	OutputAdder outputAdder;
+	std::vector< std::string > availableOutputs = outputAdder.getAvailableOutputs();
+	TCLAP::ValuesConstraint<std::string> outputsConstraint( availableOutputs );
+
+	// default list
+	std::string defaultOutputsAsArgument;
+	for( std::string & output : outputs )
+		defaultOutputsAsArgument += "-o " + output + " ";
+	defaultOutputsAsArgument.pop_back();
+
 	try
 	{
 		TCLAP::CmdLine cmd(
@@ -177,21 +124,21 @@ int main( int argc, char ** argv )
 		TCLAP::ValueArg<int> widthArg(
 			"", "width",
 			"Width of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(width),
-			false, width, "int",    cmd );
+			false, width, "int", cmd );
 
 		TCLAP::ValueArg<int> heigthArg(
 			"", "height",
 			"Height of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(height),
-			false, height, "int",    cmd );
+			false, height, "int", cmd );
 
 		TCLAP::ValueArg<float> fpsArg(
 			"", "fps",
 			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(fps),
-			false, fps, "float",  cmd );
+			false, fps, "float", cmd );
 
 		TCLAP::MultiArg<std::string> outputsArg(
 			"o",  "output",
-			"Adds one or more output method.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
+			"Adds one or more output modules.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
 			false, &outputsConstraint, cmd );
 
 		cmd.parse( argc, argv );
@@ -205,9 +152,10 @@ int main( int argc, char ** argv )
 	}
 	catch( TCLAP::ArgException & e )
 	{
-		std::cerr << "Command line error: " << e.error() << " for arg " << e.argId() << std::endl;
+		std::cerr << "Command line error: \"" << e.error() << "\" for arg \"" << e.argId() << "\"\n";
 		return 1;
 	}
+
 	////////////////////////////////////////////////////////////////
 
 
@@ -232,18 +180,6 @@ int main( int argc, char ** argv )
 	processor.setCalibrationBeginCallback( calibrationBegin );
 	processor.setCalibrationEndCallback( calibrationEnd );
 
-	UnixDomainSocketFrameOutput unixDomainSocketFrameOutput;
-	processor.addFrameOutput( &unixDomainSocketFrameOutput );
-
-//	DebugPointOutputCV debugPointOutputCV( processor );
-//	processor.addPointOutput( &debugPointOutputCV );
-
-//	UnixDomainSocketPointOutput unixDomainSocketPointOutput;
-//	processor.addPointOutput( &unixDomainSocketPointOutput );
-
-//	PointOutputUinput pointOutputUinput;
-//	processor.addPointOutput( &pointOutputUinput );
-
 	outputAdder.setProcessor( &processor );
 	for( std::string & output : outputs )
 		outputAdder.add( output );
@@ -258,11 +194,11 @@ int main( int argc, char ** argv )
 
 
 	////////////////////////////////////////////////////////////////
-	// start the main loop
+	// start the main loop and process each frame
 	processor.start();
 	while( running )
 	{
-		//TODO: instead of polling the "isProcessing" flag, put controllers in threads and use some blocking mechanism
+		//TODO: instead of polling the "isProcessing" flag, maybe put controllers in threads and use some blocking mechanism?
 		controller.dispatch();
 		if( processor.isProcessing() )
 			processor.processFrame();
