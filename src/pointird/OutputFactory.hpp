@@ -21,10 +21,9 @@
 #define _OUTPUTADDER__INCLUDED_
 
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <map>
-#include <functional>
 
 
 class Processor;
@@ -32,26 +31,26 @@ class APointOutput;
 class AFrameOutput;
 
 
-class OutputAdder
+class OutputFactory
 {
 public:
-	OutputAdder();
+	OutputFactory();
+	~OutputFactory();
 
-	bool addPointOutput( const std::string name );
-	bool addFrameOutput( const std::string name );
-	bool add( const std::string & name );
+	APointOutput * newPointOutput( const std::string name ) const;
+	AFrameOutput * newFrameOutput( const std::string name ) const;
 
-	std::vector< std::string > getAvailableOutputs();
+	std::vector< std::string > getAvailablePointOutputs() const;
+	std::vector< std::string > getAvailableFrameOutputs() const;
+	std::vector< std::string > getAvailableOutputs() const;
 
-	void setProcessor( Processor * processor ) { this->processor = processor; }
+	void setProcessor( const Processor * processor ) { this->processor = processor; }
 
 private:
-	typedef std::map< std::string, std::function< APointOutput*(void) > > PointOutputMap;
-	typedef std::map< std::string, std::function< AFrameOutput*(void) > > FrameOutputMap;
-	PointOutputMap pointOutputMap;
-	FrameOutputMap frameOutputMap;
+	class Impl;
+	std::unique_ptr< Impl > pImpl;
 
-	Processor * processor;
+	const Processor * processor;
 };
 
 

@@ -22,11 +22,12 @@
 
 
 #include <PointIR/Frame.h>
+#include <PointIR/PointArray.h>
 
 #include <stdint.h>
 
 #include <memory>
-#include <vector>
+#include <set>
 #include <functional>
 
 
@@ -66,11 +67,13 @@ public:
 	bool removeFrameOutput( AFrameOutput * output );
 	void setFrameOutputEnabled( bool enable );
 	bool isFrameOutputEnabled() const;
+	std::set<AFrameOutput*> getFrameOutputs();
 
 	bool addPointOutput( APointOutput * output );
 	bool removePointOutput( APointOutput * output );
 	void setPointOutputEnabled( bool enable );
 	bool isPointOutputEnabled() const;
+	std::set<APointOutput*> getPointOutputs();
 
 	void setPointFilter( APointFilter * pointFilter );
 	APointFilter * getPointFilter() const;
@@ -85,7 +88,8 @@ private:
 	APointDetector & detector;
 	AUnprojector & unprojector;
 
-	PointIR_Frame * frame = nullptr;
+	PointIR::Frame frame;
+	PointIR::PointArray pointArray;
 };
 
 

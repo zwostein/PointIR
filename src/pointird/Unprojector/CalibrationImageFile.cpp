@@ -77,11 +77,11 @@ bool CalibrationImageFile::generate()
 
 	std::cout << "CalibrationImageFile: Saving calibration image to \"" + fileName + "\"" << std::endl;
 
-	uint8_t * greyImage = new uint8_t[ this->width * this->height ];
-	this->unprojector.generateCalibrationImage( greyImage, this->width, this->height );
+	PointIR::Frame frame;
+	this->unprojector.generateCalibrationImage( frame, this->width, this->height );
 
 	unsigned int error = lodepng::encode( fileName,
-		greyImage,                  // raw data
+		frame.getData(),            // raw data
 		this->width, this->height,  // image size
 		LodePNGColorType::LCT_GREY, // only greyscale
 		8                           // 8 bits per channel

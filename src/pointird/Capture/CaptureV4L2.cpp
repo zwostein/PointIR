@@ -427,35 +427,18 @@ unsigned int CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 }
 
 
-PointIR_Frame * CaptureV4L2::retrieveFrame( PointIR_Frame * frame ) const
+bool CaptureV4L2::retrieveFrame( PointIR::Frame & frame ) const
 {
 	if( this->pImpl->currentBuffer < 0 )
 	{
 		std::cerr << "CaptureV4L2: no buffer available\n";
-		return frame;
+		return false;
 	}
 
-	if( !frame )
-	{ // no frame to reuse given? create one!
-		frame = (PointIR_Frame*) malloc( sizeof(PointIR_Frame) + this->width * this->height );
-		if( !frame )
-			throw SYSTEM_ERROR( errno, "malloc" );
-		frame->width = this->width;
-		frame->height = this->height;
-		std::cerr << "CaptureV4L2: created new frame buffer ("<< this->width << "x" << this->height << ")\n";
-	}
-	else if( (frame->width != this->width) || (frame->height != this->height) )
-	{ // frame for reuse given but has different size? resize!
-		frame = (PointIR_Frame*) realloc( frame, sizeof(PointIR_Frame) + this->width * this->height );
-		if( !frame )
-			throw SYSTEM_ERROR( errno, "realloc" );
-		frame->width = this->width;
-		frame->height = this->height;
-		std::cerr << "CaptureV4L2: resized frame buffer to "<< this->width << "x" << this->height << "\n";
-	}
+	frame.resize( this->width, this->height );
 
 	uint8_t * src = static_cast<uint8_t*>( this->pImpl->buffers[this->pImpl->currentBuffer].start );
-	uint8_t * dst = frame->data;
+	uint8_t * dst = frame.getData();
 
 	// copy greyscale component to destination buffer
 	for( unsigned int h = 0; h < this->height; h++ )
@@ -468,7 +451,7 @@ PointIR_Frame * CaptureV4L2::retrieveFrame( PointIR_Frame * frame ) const
 		}
 		src += this->pImpl->bytesPerLine - ( this->width * 2 );
 	}
-	return frame;
+	return true;
 }
 
 

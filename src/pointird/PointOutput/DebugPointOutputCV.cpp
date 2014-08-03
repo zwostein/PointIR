@@ -21,6 +21,8 @@
 #include "../Processor.hpp"
 #include "../Unprojector/AUnprojector.hpp"
 
+#include <PointIR/PointArray.h>
+
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -37,7 +39,7 @@ DebugPointOutputCV::~DebugPointOutputCV()
 }
 
 
-void DebugPointOutputCV::outputPoints( const std::vector< PointIR_Point > & points )
+void DebugPointOutputCV::outputPoints( const PointIR::PointArray & pointArray )
 {
 	cv::Mat image;
 	const PointIR_Frame * frame = this->processor.getProcessedFrame();
@@ -54,7 +56,7 @@ void DebugPointOutputCV::outputPoints( const std::vector< PointIR_Point > & poin
 		processor.getUnprojector().unproject( image.data, frame->width, frame->height );
 	}
 	cv::cvtColor( image, image, CV_GRAY2RGB );
-	for( const PointIR_Point & point : points )
+	for( const PointIR_Point & point : pointArray )
 		cv::circle( image, cv::Point2f( point.x * image.cols, point.y * image.rows ), 10.0f, cv::Scalar( 0, 255, 0 ) );
 	cv::imshow( "DebugPointOutputCV", image );
 	cv::waitKey(1); // need this for event processing - window wouldn't be visible

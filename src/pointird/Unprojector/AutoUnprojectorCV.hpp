@@ -23,8 +23,6 @@
 
 #include "AAutoUnprojector.hpp"
 
-#include <PointIR/Point.h>
-
 #include <memory>
 
 #include <stdint.h>
@@ -37,13 +35,13 @@ public:
 	~AutoUnprojectorCV();
 
 	virtual void unproject( uint8_t * greyImage, unsigned int width, unsigned int height ) const override;
-	virtual void unproject( std::vector< PointIR_Point > & points ) const override;
+	virtual void unproject( PointIR::PointArray & pointArray ) const override;
 
 	virtual std::vector< uint8_t > getRawCalibrationData() const override;
 	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) override;
 
-	virtual bool calibrate( const uint8_t * greyImage, unsigned int width, unsigned int height ) override;
-	virtual void generateCalibrationImage( uint8_t * greyImage, unsigned int width, unsigned int height ) const override;
+	virtual bool calibrate( const PointIR::Frame & frame ) override;
+	virtual void generateCalibrationImage( PointIR::Frame & frame, unsigned int width, unsigned int height ) const override;
 
 private:
 	class Impl;

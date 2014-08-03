@@ -30,8 +30,8 @@ class DebugPointOutputCV : public APointOutput
 {
 public:
 	DebugPointOutputCV( const Processor & processor );
-	~DebugPointOutputCV();
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) override;
+	virtual ~DebugPointOutputCV();
+	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 private:
 	const Processor & processor;
 };

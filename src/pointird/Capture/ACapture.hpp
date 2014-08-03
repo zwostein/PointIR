@@ -21,11 +21,15 @@
 #define _ACAPTURE__INCLUDED_
 
 
-#include <PointIR/Frame.h>
-
 #include <string>
 
 #include <stdint.h>
+
+
+namespace PointIR
+{
+	class Frame;
+}
 
 
 class ACapture
@@ -33,7 +37,7 @@ class ACapture
 public:
 	virtual void start() = 0;
 	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) = 0;
-	virtual PointIR_Frame * retrieveFrame( PointIR_Frame * reuse = nullptr ) const = 0;
+	virtual bool retrieveFrame( PointIR::Frame & frame ) const = 0;
 	virtual void stop() = 0;
 
 	virtual bool isCapturing() const = 0;

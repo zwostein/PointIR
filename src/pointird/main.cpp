@@ -33,8 +33,10 @@
 #include "Unprojector/CalibrationDataFile.hpp"
 #include "PointFilter/OffscreenFilter.hpp"
 #include "PointFilter/PointFilterChain.hpp"
+#include "PointOutput/APointOutput.hpp"
+#include "FrameOutput/AFrameOutput.hpp"
 #include "Processor.hpp"
-#include "OutputAdder.hpp"
+#include "OutputFactory.hpp"
 
 
 static const char * notice =
@@ -74,7 +76,7 @@ int main( int argc, char ** argv )
 	int width = 320;
 	int height = 240;
 	float fps = 30.0f;
-	std::vector<std::string> outputs( {"uinput", "socket"} );
+	std::vector<std::string> outputNames( {"uinput", "socket"} );
 	////////////////////////////////////////////////////////////////
 
 
@@ -98,13 +100,13 @@ int main( int argc, char ** argv )
 	// process command line options
 
 	// create a list of available outputs that can be added later
-	OutputAdder outputAdder;
-	std::vector< std::string > availableOutputs = outputAdder.getAvailableOutputs();
-	TCLAP::ValuesConstraint<std::string> outputsConstraint( availableOutputs );
+	OutputFactory outputFactory;
+	std::vector< std::string > availableOutputNames = outputFactory.getAvailableOutputs();
+	TCLAP::ValuesConstraint<std::string> outputsArgConstraint( availableOutputNames );
 
 	// default list
 	std::string defaultOutputsAsArgument;
-	for( std::string & output : outputs )
+	for( std::string & output : outputNames )
 		defaultOutputsAsArgument += "-o " + output + " ";
 	defaultOutputsAsArgument.pop_back();
 
@@ -139,7 +141,7 @@ int main( int argc, char ** argv )
 		TCLAP::MultiArg<std::string> outputsArg(
 			"o",  "output",
 			"Adds one or more output modules.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
-			false, &outputsConstraint, cmd );
+			false, &outputsArgConstraint, cmd );
 
 		cmd.parse( argc, argv );
 
@@ -148,7 +150,7 @@ int main( int argc, char ** argv )
 		height = heigthArg.getValue();
 		fps = fpsArg.getValue();
 		if( !outputsArg.getValue().empty() )
-			outputs = outputsArg.getValue();
+			outputNames = outputsArg.getValue();
 	}
 	catch( TCLAP::ArgException & e )
 	{
@@ -180,9 +182,17 @@ int main( int argc, char ** argv )
 	processor.setCalibrationBeginCallback( calibrationBegin );
 	processor.setCalibrationEndCallback( calibrationEnd );
 
-	outputAdder.setProcessor( &processor );
-	for( std::string & output : outputs )
-		outputAdder.add( output );
+	outputFactory.setProcessor( &processor );
+	for( std::string & outputName : outputNames )
+	{
+		APointOutput * pointOutput = outputFactory.newPointOutput( outputName );
+		if( pointOutput )
+			processor.addPointOutput( pointOutput );
+
+		AFrameOutput * frameOutput = outputFactory.newFrameOutput( outputName );
+		if( frameOutput )
+			processor.addFrameOutput( frameOutput );
+	}
 
 	////////////////////////////////////////////////////////////////
 
@@ -207,6 +217,25 @@ int main( int argc, char ** argv )
 	}
 	processor.stop();
 	////////////////////////////////////////////////////////////////
+
+
+	////////////////////////////////////////////////////////////////
+	// cleanup
+
+	for( auto output : processor.getPointOutputs() )
+	{
+		processor.removePointOutput( output );
+		delete output;
+	}
+
+	for( auto output : processor.getFrameOutputs() )
+	{
+		processor.removeFrameOutput( output );
+		delete output;
+	}
+
+	////////////////////////////////////////////////////////////////
+
 
 	return 0;
 }

@@ -23,8 +23,6 @@
 
 #include "APointDetector.hpp"
 
-#include <PointIR/Point.h>
-
 #include <vector>
 
 #include <stdint.h>
@@ -33,7 +31,7 @@
 class PointDetectorCV : public APointDetector
 {
 public:
-	virtual std::vector< PointIR_Point > detect( const PointIR_Frame * frame ) override;
+	virtual void detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame ) override;
 
 	void setIntensityThreshold( uint8_t threshold ) { this->intensityThreshold = threshold; }
 	uint8_t getIntensityThreshold() const { return this->intensityThreshold; }

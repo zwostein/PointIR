@@ -31,9 +31,9 @@ class UnixDomainSocketFrameOutput : public AFrameOutput
 {
 public:
 	UnixDomainSocketFrameOutput();
-	~UnixDomainSocketFrameOutput();
+	virtual ~UnixDomainSocketFrameOutput();
 
-	virtual void outputFrame( const PointIR_Frame * frame ) override;
+	virtual void outputFrame( const PointIR::Frame & frame ) override;
 
 	const std::string & getSocketPath() const { return this->socketPath; }
 

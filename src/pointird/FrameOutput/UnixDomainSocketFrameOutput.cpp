@@ -88,8 +88,7 @@ UnixDomainSocketFrameOutput::UnixDomainSocketFrameOutput() :
 	pImpl( new Impl )
 {
 	std::stringstream ss;
-//	ss << "/tmp/PointIR." << getpid() << ".video.socket";
-	ss << "/tmp/PointIR.video.socket";
+	ss << UnixDomainSocketFrameOutput::directory << "PointIR.video.socket";
 	this->socketPath = ss.str();
 
 	// delete existing socket if it exists
@@ -138,9 +137,10 @@ UnixDomainSocketFrameOutput::~UnixDomainSocketFrameOutput()
 }
 
 
-void UnixDomainSocketFrameOutput::outputFrame( const PointIR_Frame * frame )
+void UnixDomainSocketFrameOutput::outputFrame( const PointIR::Frame & frame )
 {
-	size_t packetSize = sizeof(PointIR_Frame) + frame->width * frame->height;
+	const PointIR_Frame * packet = static_cast<const PointIR_Frame*>(frame);
+	size_t packetSize = sizeof(PointIR_Frame) + packet->width * packet->height;
 
 	// resize socket buffers if needed - doesn't seem necessary for SOCK_SEQPACKET
 	if( this->pImpl->socketBufferSize != packetSize )
@@ -181,7 +181,7 @@ void UnixDomainSocketFrameOutput::outputFrame( const PointIR_Frame * frame )
 	// send frame packet - removing remotes on the fly if disconnected
 	for( auto it = this->pImpl->remotes.begin(); it != this->pImpl->remotes.end(); )
 	{
-		ssize_t sent = send( it->fd, frame, packetSize, MSG_NOSIGNAL );
+		ssize_t sent = send( it->fd, packet, packetSize, MSG_NOSIGNAL );
 		if( -1 == sent )
 		{
 			if( EPIPE == errno || ECONNRESET == errno )

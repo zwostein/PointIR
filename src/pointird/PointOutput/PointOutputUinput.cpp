@@ -23,6 +23,8 @@
 #include "PointOutputUinput.hpp"
 #include "../exceptions.hpp"
 
+#include <PointIR/PointArray.h>
+
 #include <iostream>
 #include <vector>
 
@@ -189,12 +191,12 @@ static void addEvent( std::vector< struct input_event > & events, __u16 type, __
 }
 
 
-void PointOutputUinput::outputPoints( const std::vector< PointIR_Point > & points )
+void PointOutputUinput::outputPoints( const PointIR::PointArray & pointArray )
 {
 	// https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt
 	std::vector< struct input_event > events;
 
-	if( points.empty() )
+	if( pointArray.empty() )
 	{
 		// if there was a contact last pass, send a SYN_MT_REPORT followed by SYN_REPORT to mark the last contact as lifted
 		if( this->pImpl->hadPreviousContact )
@@ -210,7 +212,7 @@ void PointOutputUinput::outputPoints( const std::vector< PointIR_Point > & point
 //		{
 //			addEvent( events, EV_KEY, BTN_TOUCH, 1 );
 //		}
-		for( const PointIR_Point & point : points )
+		for( const PointIR_Point & point : pointArray )
 		{
 			int16_t x = resX * point.x;
 			int16_t y = resY * point.y;

@@ -29,8 +29,8 @@
 class AAutoUnprojector : public AUnprojector
 {
 public:
-	virtual bool calibrate( const uint8_t * greyImage, unsigned int width, unsigned int height ) = 0;
-	virtual void generateCalibrationImage( uint8_t * greyImage, unsigned int width, unsigned int height ) const = 0;
+	virtual bool calibrate( const PointIR::Frame & frame ) = 0;
+	virtual void generateCalibrationImage( PointIR::Frame & frame, unsigned int width, unsigned int height ) const = 0;
 };
 
 

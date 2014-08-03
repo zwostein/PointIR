@@ -19,23 +19,25 @@
 
 #include "OffscreenFilter.hpp"
 
+#include <PointIR/PointArray.h>
+
 
 template< typename T >
-static void erase_unordered( std::vector< T > & v, typename std::vector< T >::size_type index )
+static void erase_unordered( T & v, size_t index )
 {
 	std::swap( v[index], v.back() );
 	v.pop_back();
 }
 
 
-void OffscreenFilter::filterPoints( std::vector< PointIR_Point > & points ) const
+void OffscreenFilter::filterPoints( PointIR::PointArray & pointArray ) const
 {
 	float minMargin = 0.0f - this->tolerance;
 	float maxMargin = 1.0f + this->tolerance;
-	for( std::vector< PointIR_Point >::size_type i = 0; i < points.size(); )
+	for( PointIR::PointArray::size_type i = 0; i < pointArray.size(); )
 	{
-		if( points[i].x < minMargin || points[i].x >= maxMargin || points[i].y < minMargin || points[i].y >= maxMargin )
-			erase_unordered( points, i );
+		if( pointArray[i].x < minMargin || pointArray[i].x >= maxMargin || pointArray[i].y < minMargin || pointArray[i].y >= maxMargin )
+			erase_unordered( pointArray, i );
 		else
 			i++;
 	}

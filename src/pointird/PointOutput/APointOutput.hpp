@@ -21,15 +21,20 @@
 #define _APOINTOUTPUT__INCLUDED_
 
 
-#include <PointIR/Point.h>
-
 #include <vector>
+
+
+namespace PointIR
+{
+	class PointArray;
+}
 
 
 class APointOutput
 {
 public:
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) = 0;
+	virtual ~APointOutput() {}
+	virtual void outputPoints( const PointIR::PointArray & pointArray ) = 0;
 };
 
 

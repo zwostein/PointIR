@@ -32,9 +32,9 @@ class PointOutputUinput : public APointOutput
 {
 public:
 	PointOutputUinput();
-	~PointOutputUinput();
+	virtual ~PointOutputUinput();
 
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) override;
+	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 
 private:
 	class Impl;

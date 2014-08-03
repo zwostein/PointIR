@@ -37,7 +37,7 @@ public:
 
 	virtual void start() override;
 	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) override;
-	virtual PointIR_Frame * retrieveFrame( PointIR_Frame * reuse = nullptr ) const override;
+	virtual bool retrieveFrame( PointIR::Frame & frame ) const override;
 	virtual void stop() override;
 
 	virtual bool isCapturing() const override { return this->capturing; };

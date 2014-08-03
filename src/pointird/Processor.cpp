@@ -77,7 +77,18 @@ Processor::Processor( ACapture & capture, APointDetector & detector, AUnprojecto
 
 Processor::~Processor()
 {
-	free( this->frame );
+}
+
+
+std::set< AFrameOutput * > Processor::getFrameOutputs()
+{
+	return this->pImpl->frameOutputs;
+}
+
+
+std::set< APointOutput * > Processor::getPointOutputs()
+{
+	return this->pImpl->pointOutputs;
 }
 
 
@@ -110,7 +121,7 @@ void Processor::processFrame()
 		return;
 
 	this->capture.advanceFrame();
-	this->frame = this->capture.retrieveFrame( this->frame );
+	this->capture.retrieveFrame( this->frame );
 
 	if( this->pImpl->frameOutputEnabled )
 	{
@@ -123,7 +134,7 @@ void Processor::processFrame()
 		//TODO: as soon as there are multiple ways for calibrating, move the calibration logic to an external module/class
 		if( AAutoUnprojector * autoUnprojector = dynamic_cast<AAutoUnprojector*>( &(this->unprojector) ) )
 		{
-			bool result = autoUnprojector->calibrate( this->frame->data, this->frame->width, this->frame->height );
+			bool result = autoUnprojector->calibrate( this->frame );
 			//TODO: maybe keep trying to calibrate for a few frames until calling back
 			this->pImpl->endCalibration( result );
 		}
@@ -135,17 +146,17 @@ void Processor::processFrame()
 	}
 	else
 	{
-		std::vector< PointIR_Point > points = detector.detect( this->frame );
+		this->detector.detect( this->pointArray, this->frame );
 
-		this->unprojector.unproject( points );
+		this->unprojector.unproject( this->pointArray );
 
 		if( this->pImpl->filter )
-			this->pImpl->filter->filterPoints( points );
+			this->pImpl->filter->filterPoints( this->pointArray );
 
 		if( this->pImpl->pointOutputEnabled )
 		{
 			for( APointOutput * output : this->pImpl->pointOutputs )
-				output->outputPoints( points );
+				output->outputPoints( this->pointArray );
 		}
 	}
 }

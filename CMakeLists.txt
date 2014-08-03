@@ -8,7 +8,7 @@ add_executable( ${EXECUTABLE_NAME}
 	src/lodepng.cpp
 	src/pointird/main.cpp
 	src/pointird/Processor.cpp
-	src/pointird/OutputAdder.cpp
+	src/pointird/OutputFactory.cpp
 	src/pointird/Capture/CaptureV4L2.cpp
 	src/pointird/FrameOutput/UnixDomainSocketFrameOutput.cpp
 	src/pointird/PointDetector/PointDetectorCV.cpp

@@ -31,9 +31,9 @@ class UnixDomainSocketPointOutput : public APointOutput
 {
 public:
 	UnixDomainSocketPointOutput();
-	~UnixDomainSocketPointOutput();
+	virtual ~UnixDomainSocketPointOutput();
 
-	virtual void outputPoints( const std::vector< PointIR_Point > & points ) override;
+	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 
 	const std::string & getSocketPath() const { return this->socketPath; }
 

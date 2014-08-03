@@ -21,18 +21,17 @@
 #define _APOINTDETECTOR__INCLUDED_
 
 
-#include <PointIR/Point.h>
-#include <PointIR/Frame.h>
-
-#include <vector>
-
-#include <stdint.h>
+namespace PointIR
+{
+	class Frame;
+	class PointArray;
+}
 
 
 class APointDetector
 {
 public:
-	virtual std::vector< PointIR_Point > detect( const PointIR_Frame * frame ) = 0;
+	virtual void detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame ) = 0;
 };
 
 

@@ -22,6 +22,9 @@
 
 #include "PointDetectorCV.hpp"
 
+#include <PointIR/Frame.h>
+#include <PointIR/PointArray.h>
+
 #include <iostream>
 #include <limits>
 
@@ -49,12 +52,14 @@ static cv::Mat imageDebug;
 #endif
 
 
-static void pointsFromContours( std::vector<PointIR_Point> & points, const std::vector< std::vector<cv::Point> > & contours )
+static void pointsFromContours( PointIR::PointArray & pointArray, const std::vector< std::vector<cv::Point> > & contours )
 {
-	points.reserve( contours.size() );
+	pointArray.resizeIfNeeded( contours.size() );
 	for( size_t i = 0 ; i < contours.size() ; i++ )
 	{
-		PointIR_Point point = {};
+		PointIR_Point & point = pointArray[i];
+		point.x = 0;
+		point.y = 0;
 		assert( !contours[i].empty() );
 		for( const cv::Point & contourPoint : contours[i] )
 		{
@@ -63,7 +68,6 @@ static void pointsFromContours( std::vector<PointIR_Point> & points, const std::
 		}
 		point.x /= contours[i].size();
 		point.y /= contours[i].size();
-		points.push_back( point );
 #ifdef _POINTDETECTORCV__LIVEDEBUG_
 		cv::circle( imageDebug, cv::Point2f( point.x, point.y ), 3.0f, cv::Scalar( 0, 255, 0 ) );
 #endif
@@ -71,14 +75,16 @@ static void pointsFromContours( std::vector<PointIR_Point> & points, const std::
 }
 
 
-static void pointsFromContours_BoundFiltered( std::vector<PointIR_Point> & points, const std::vector< std::vector<cv::Point> > & contours,
+static void pointsFromContours_BoundFiltered( PointIR::PointArray & pointArray, const std::vector< std::vector<cv::Point> > & contours,
                                               const float & minSize, const float & maxSize )
 {
-	points.reserve( contours.size() );
+	pointArray.resizeIfNeeded( contours.size() );
 	for( size_t i = 0 ; i < contours.size() ; i++ )
 	{
 		BoundingBox box;
-		PointIR_Point point = {};
+		PointIR_Point & point = pointArray[i];
+		point.x = 0;
+		point.y = 0;
 		assert( !contours[i].empty() );
 		for( const cv::Point & contourPoint : contours[i] )
 		{
@@ -103,7 +109,6 @@ static void pointsFromContours_BoundFiltered( std::vector<PointIR_Point> & point
 			continue;
 		point.x /= contours[i].size();
 		point.y /= contours[i].size();
-		points.push_back( point );
 #ifdef _POINTDETECTORCV__LIVEDEBUG_
 		cv::circle( imageDebug, cv::Point2f( point.x, point.y ), 3.0f, cv::Scalar( 0, 255, 0 ) );
 		cv::rectangle( imageDebug, cv::Point2f( box.minX, box.minY ), cv::Point2f( box.maxX, box.maxY ), cv::Scalar( 0, 255, 255 ) );
@@ -112,15 +117,16 @@ static void pointsFromContours_BoundFiltered( std::vector<PointIR_Point> & point
 }
 
 
-std::vector< PointIR_Point > PointDetectorCV::detect( const PointIR_Frame * frame )
+void PointDetectorCV::detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame )
 {
 	// create a thresholded copy of input image that may be modified
-	cv::Mat imageThresholded( cv::Size( frame->width, frame->height), CV_8UC1 );
+	cv::Mat imageThresholded( cv::Size( frame.getWidth(), frame.getHeight()), CV_8UC1 );
 	assert( imageThresholded.isContinuous() );
-	unsigned int imageSize = frame->width * frame->height;
-	for( unsigned int wh = 0 ; wh < imageSize ; wh++ )
+
+	size_t imageSize = frame.size();
+	for( size_t wh = 0 ; wh < imageSize ; wh++ )
 	{
-		if( frame->data[wh] >= this->intensityThreshold )
+		if( frame[wh] >= this->intensityThreshold )
 			imageThresholded.data[wh] = 0xff;
 		else
 			imageThresholded.data[wh] = 0x00;
@@ -142,25 +148,21 @@ std::vector< PointIR_Point > PointDetectorCV::detect( const PointIR_Frame * fram
 #endif
 
 	// approximate the middle of each contour - this is our point
-	std::vector< PointIR_Point > points;
-	points.reserve( contours.size() );
 	if( boundingFilterEnabled )
 	{
-		float averageImageSize = (frame->width+frame->height)/2;
+		float averageImageSize = (frame.getWidth()+frame.getHeight())/2;
 		// minimum of one pixel for absolute point sizes
 		float minSize = std::max( 1.0f, this->minBoundingSize * averageImageSize );
 		float maxSize = std::max( 1.0f, this->maxBoundingSize * averageImageSize );
-		pointsFromContours_BoundFiltered( points, contours, minSize, maxSize );
+		pointsFromContours_BoundFiltered( pointArray, contours, minSize, maxSize );
 	}
 	else
 	{
-		pointsFromContours( points, contours );
+		pointsFromContours( pointArray, contours );
 	}
 
 #ifdef _POINTDETECTORCV__LIVEDEBUG_
 	cv::imshow( "PointDetectorCV", imageDebug );
 	cv::waitKey(1); // need this for event processing - window wouldn't be visible
 #endif
-
-	return points;
 }

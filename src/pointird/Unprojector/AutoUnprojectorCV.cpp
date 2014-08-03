@@ -22,6 +22,12 @@
 
 #include "AutoUnprojectorCV.hpp"
 
+#include <PointIR/Frame.h>
+#include <PointIR/Point.h>
+#include <PointIR/PointArray.h>
+
+#include <vector>
+
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
@@ -135,11 +141,12 @@ bool AutoUnprojectorCV::setRawCalibrationData( const std::vector< uint8_t > & ra
 }
 
 
-void AutoUnprojectorCV::generateCalibrationImage( uint8_t * greyImage, unsigned int width, unsigned int height ) const
+void AutoUnprojectorCV::generateCalibrationImage( PointIR::Frame & frame, unsigned int width, unsigned int height ) const
 {
-	clear( greyImage, width, height, 0xff );
+	frame.resize( width, height );
+	clear( frame.getData(), width, height, 0xff );
 	drawChessboard(
-		greyImage, width, height,
+		frame.getData(), width, height,
 		width * chessboardBorder, height * chessboardBorder, // position of top left field
 		width * ( 1.0f - 2.0f * chessboardBorder ), height * ( 1.0f - 2.0f * chessboardBorder ), // width and height of board
 		chessboardNumFieldsX, chessboardNumFieldsY
@@ -147,17 +154,17 @@ void AutoUnprojectorCV::generateCalibrationImage( uint8_t * greyImage, unsigned 
 }
 
 
-bool AutoUnprojectorCV::calibrate( const uint8_t * greyImage, unsigned int width, unsigned int height )
+bool AutoUnprojectorCV::calibrate( const PointIR::Frame & frame )
 {
-	cv::Mat image( cv::Size( width, height ), CV_8UC1 );
+	cv::Mat image( cv::Size( frame.getWidth(), frame.getHeight() ), CV_8UC1 );
 	assert( image.isContinuous() );
-	memcpy( image.data, greyImage, width * height );
+	memcpy( image.data, frame.getData(), frame.getWidth() * frame.getHeight() );
 
 	// points in object coordinates
-	float offsetX = (float)width * chessboardBorder;
-	float offsetY = (float)height * chessboardBorder;
-	float boardWidth = (float)width * ( 1.0f - 2.0f * chessboardBorder );
-	float boardHeight = (float)height * ( 1.0f - 2.0f * chessboardBorder );
+	float offsetX = (float)frame.getWidth() * chessboardBorder;
+	float offsetY = (float)frame.getHeight() * chessboardBorder;
+	float boardWidth = (float)frame.getWidth() * ( 1.0f - 2.0f * chessboardBorder );
+	float boardHeight = (float)frame.getHeight() * ( 1.0f - 2.0f * chessboardBorder );
 	std::vector< cv::Point2f > objectPoints;
 	for( unsigned int h = 1; h <= chessboardNumCornersY; h++ )
 	{
@@ -186,7 +193,7 @@ bool AutoUnprojectorCV::calibrate( const uint8_t * greyImage, unsigned int width
 
 	cv::Mat perspective = cv::findHomography( imagePoints, objectPoints );
 
-	this->pImpl->setCalibrationData( perspective, width, height );
+	this->pImpl->setCalibrationData( perspective, frame.getWidth(), frame.getHeight() );
 	return true;
 }
 
@@ -200,10 +207,10 @@ void AutoUnprojectorCV::unproject( uint8_t * image, unsigned int width, unsigned
 }
 
 
-void AutoUnprojectorCV::unproject( std::vector< PointIR_Point > & points ) const
+void AutoUnprojectorCV::unproject( PointIR::PointArray & pointArray ) const
 {
 	const double * m = (const double*)this->pImpl->normalizedPerspective.data;
-	for( PointIR_Point & point : points )
+	for( PointIR_Point & point : pointArray )
 	{
 		double x = point.x;
 		double y = point.y;

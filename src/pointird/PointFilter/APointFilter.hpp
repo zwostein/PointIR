@@ -21,15 +21,19 @@
 #define _APOINTFILTER__INCLUDED_
 
 
-#include <PointIR/Point.h>
-
 #include <vector>
+
+
+namespace PointIR
+{
+	class PointArray;
+}
 
 
 class APointFilter
 {
 public:
-	virtual void filterPoints( std::vector< PointIR_Point > & points ) const = 0;
+	virtual void filterPoints( PointIR::PointArray & pointArray ) const = 0;
 };
 
 

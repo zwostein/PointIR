@@ -62,8 +62,7 @@ public:
 	};
 	Socket local;
 	std::list< Socket > remotes;
-	unsigned int pointArrayBufferSize = 0;
-	PointIR_PointArray * pointArrayBuffer = nullptr;
+	unsigned int socketBufferSize = 0;
 };
 
 
@@ -88,11 +87,6 @@ static void unlinkSocket( const std::string & socketPath )
 UnixDomainSocketPointOutput::UnixDomainSocketPointOutput() :
 	pImpl( new Impl )
 {
-	this->pImpl->pointArrayBufferSize = sizeof(PointIR_PointArray) + 8 * sizeof(PointIR_Point);
-	this->pImpl->pointArrayBuffer = (PointIR_PointArray*) calloc( 1, this->pImpl->pointArrayBufferSize );
-	if( !this->pImpl->pointArrayBuffer )
-		throw SYSTEM_ERROR( errno, "calloc" );
-
 	std::stringstream ss;
 	ss << UnixDomainSocketPointOutput::directory << "PointIR.points.socket";
 	this->socketPath = ss.str();
@@ -130,7 +124,6 @@ UnixDomainSocketPointOutput::~UnixDomainSocketPointOutput()
 {
 	try
 	{
-		free( this->pImpl->pointArrayBuffer );
 		unlinkSocket( this->socketPath );
 	}
 	catch( std::exception & ex )
@@ -144,9 +137,19 @@ UnixDomainSocketPointOutput::~UnixDomainSocketPointOutput()
 }
 
 
-void UnixDomainSocketPointOutput::outputPoints( const std::vector< PointIR_Point > & points )
+void UnixDomainSocketPointOutput::outputPoints( const PointIR::PointArray & pointArray )
 {
-	size_t packetSize = sizeof(PointIR_PointArray) + points.size() * sizeof(PointIR_Point);
+	const PointIR_PointArray * packet = static_cast< const PointIR_PointArray * >( pointArray );
+	size_t packetSize = sizeof(PointIR_PointArray) + packet->count * sizeof(PointIR_Point);
+
+	// resize socket buffers if needed - doesn't seem necessary for SOCK_SEQPACKET
+	if( this->pImpl->socketBufferSize < packetSize )
+	{
+		this->pImpl->socketBufferSize = packetSize;
+		for( auto & remote : this->pImpl->remotes )
+			setsockopt( remote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->socketBufferSize), sizeof(this->pImpl->socketBufferSize) );
+		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized socket send buffers to "<< this->pImpl->socketBufferSize << "\n";
+	}
 
 	// accept all incoming connections
 	while( true )
@@ -158,8 +161,8 @@ void UnixDomainSocketPointOutput::outputPoints( const std::vector< PointIR_Point
 		{
 			if( (EAGAIN==errno) || (EWOULDBLOCK==errno) )
 				break; // no incoming connections left
-				else
-					throw SYSTEM_ERROR( errno, "accept" );
+			else
+				throw SYSTEM_ERROR( errno, "accept" );
 		}
 
 		// set remote socket nonblocking
@@ -170,34 +173,15 @@ void UnixDomainSocketPointOutput::outputPoints( const std::vector< PointIR_Point
 			throw SYSTEM_ERROR( errno, "fcntl" );
 
 		// resize socket send buffer to fit one frame - doesn't seem necessary for SOCK_SEQPACKET
-		setsockopt( newRemote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->pointArrayBufferSize), sizeof(this->pImpl->pointArrayBufferSize) );
+		setsockopt( newRemote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->socketBufferSize), sizeof(this->pImpl->socketBufferSize) );
 
 		this->pImpl->remotes.push_back( newRemote );
 	}
 
-	// resize packet buffer and socket buffers if needed
-	if( this->pImpl->pointArrayBufferSize < packetSize )
-	{
-		this->pImpl->pointArrayBufferSize = packetSize;
-		this->pImpl->pointArrayBuffer = (PointIR_PointArray*) realloc( this->pImpl->pointArrayBuffer, packetSize );
-		if( !this->pImpl->pointArrayBuffer )
-			throw SYSTEM_ERROR( errno, "realloc" );
-
-		for( auto & remote : this->pImpl->remotes )
-			setsockopt( remote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->pointArrayBufferSize), sizeof(this->pImpl->pointArrayBufferSize) );
-
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized buffers to "<< this->pImpl->pointArrayBufferSize << "\n";
-	}
-
-	// copy points
-	this->pImpl->pointArrayBuffer->count = points.size();
-	for( size_t i = 0; i < points.size(); ++i )
-		this->pImpl->pointArrayBuffer->points[i] = points[i];
-
 	// send points packet - removing remotes on the fly if disconnected
 	for( auto it = this->pImpl->remotes.begin(); it != this->pImpl->remotes.end(); )
 	{
-		ssize_t sent = send( it->fd, this->pImpl->pointArrayBuffer, packetSize, MSG_NOSIGNAL );
+		ssize_t sent = send( it->fd, packet, packetSize, MSG_NOSIGNAL );
 		if( -1 == sent )
 		{
 			if( EPIPE == errno || ECONNRESET == errno )
