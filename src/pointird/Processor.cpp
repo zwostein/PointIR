@@ -132,7 +132,6 @@ void Processor::processFrame()
 		if( AAutoUnprojector * autoUnprojector = dynamic_cast<AAutoUnprojector*>( &(this->unprojector) ) )
 		{
 			bool result = autoUnprojector->calibrate( this->frame );
-			//TODO: maybe keep trying to calibrate for a few frames until calling back
 			this->pImpl->endCalibration( result );
 		}
 		else
@@ -163,14 +162,21 @@ bool Processor::startCalibration()
 {
 	if( this->isCalibrating() )
 		return false;
+
 	this->pImpl->calibrating = true;
 	this->pImpl->calibrationSucceeded = false;
+
 	for( auto it = this->pImpl->calibrationListeners.begin(); it != this->pImpl->calibrationListeners.end(); )
 	{
 		auto current = it;
 		it++;
 		(*current)->calibrationBegin();
 	}
+
+	// flush video buffers
+	this->capture.stop();
+	this->capture.start();
+
 	return true;
 }
 
