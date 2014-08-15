@@ -42,6 +42,13 @@ class APointOutput;
 class Processor
 {
 public:
+	class ACalibrationListener
+	{
+	public:
+		virtual void calibrationBegin() {}
+		virtual void calibrationEnd( bool success ) {}
+	};
+
 	Processor( const Processor & ) = delete; // disable copy constructor
 
 	Processor( ACapture & capture, APointDetector & detector, AUnprojector & unprojector );
@@ -57,9 +64,9 @@ public:
 	void stop();
 	bool isProcessing() const;
 
-	bool startCalibration( std::function< void(bool) > resultCallback );
-	void setCalibrationBeginCallback( std::function< void(void) > beginCallback );
-	void setCalibrationEndCallback( std::function< void(void) > endCallback );
+	bool startCalibration();
+	bool addCalibrationListener( ACalibrationListener * listener );
+	bool removeCalibrationListener( ACalibrationListener * listener );
 	bool isCalibrating() const;
 	bool isCalibrationSucceeded() const;
 

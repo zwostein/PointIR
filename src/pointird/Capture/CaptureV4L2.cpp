@@ -242,7 +242,7 @@ CaptureV4L2::CaptureV4L2( const std::string & device, unsigned int width, unsign
 
 	if( this->width != fmt.fmt.pix.width || this->height != fmt.fmt.pix.height )
 	{
-		std::cerr << "\"" << this->device << "\": " << "requested video of size " << this->width << "x" << this->height
+		std::cerr << "CaptureV4L2: \"" << this->device << "\": " << "requested video of size " << this->width << "x" << this->height
 			<< " failed, using " << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height << "instead\n";
 	}
 

@@ -148,7 +148,7 @@ void UnixDomainSocketPointOutput::outputPoints( const PointIR::PointArray & poin
 		this->pImpl->socketBufferSize = packetSize;
 		for( auto & remote : this->pImpl->remotes )
 			setsockopt( remote.fd, SOL_SOCKET, SO_SNDBUF, &(this->pImpl->socketBufferSize), sizeof(this->pImpl->socketBufferSize) );
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized socket send buffers to "<< this->pImpl->socketBufferSize << "\n";
+		std::cout << "UnixDomainSocketPointOutput: resized socket send buffers to "<< this->pImpl->socketBufferSize << "\n";
 	}
 
 	// accept all incoming connections

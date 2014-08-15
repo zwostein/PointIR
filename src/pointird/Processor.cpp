@@ -45,23 +45,20 @@ public:
 	bool frameOutputEnabled = true;
 	bool pointOutputEnabled = true;
 
-	std::function< void(bool) > calibrationResultCallback;
-	std::function< void(void) > calibrationBeginCallback;
-	std::function< void(void) > calibrationEndCallback;
+	std::set< ACalibrationListener * > calibrationListeners;
 	bool calibrating = false;
 	bool calibrationSucceeded = false;
 
 	void endCalibration( bool result )
 	{
 		this->calibrationSucceeded = result;
-		if( this->calibrationResultCallback )
-		{
-			this->calibrationResultCallback( result );
-			this->calibrationResultCallback = nullptr;
-		}
 		this->calibrating = false;
-		if( this->calibrationEndCallback )
-			this->calibrationEndCallback();
+		for( auto it = this->calibrationListeners.begin(); it != this->calibrationListeners.end(); )
+		{
+			auto current = it;
+			it++;
+			(*current)->calibrationEnd( result );
+		}
 	}
 };
 
@@ -162,28 +159,31 @@ void Processor::processFrame()
 }
 
 
-bool Processor::startCalibration( std::function< void(bool) > resultCallback )
+bool Processor::startCalibration()
 {
 	if( this->isCalibrating() )
 		return false;
-	this->pImpl->calibrationResultCallback = resultCallback;
 	this->pImpl->calibrating = true;
 	this->pImpl->calibrationSucceeded = false;
-	if( this->pImpl->calibrationBeginCallback )
-		this->pImpl->calibrationBeginCallback();
+	for( auto it = this->pImpl->calibrationListeners.begin(); it != this->pImpl->calibrationListeners.end(); )
+	{
+		auto current = it;
+		it++;
+		(*current)->calibrationBegin();
+	}
 	return true;
 }
 
 
-void Processor::setCalibrationBeginCallback( std::function< void(void) > beginCallback )
+bool Processor::addCalibrationListener( Processor::ACalibrationListener * listener )
 {
-	this->pImpl->calibrationBeginCallback = beginCallback;
+	return this->pImpl->calibrationListeners.insert( listener ).second;
 }
 
 
-void Processor::setCalibrationEndCallback( std::function< void(void) > endCallback )
+bool Processor::removeCalibrationListener( Processor::ACalibrationListener * listener )
 {
-	this->pImpl->calibrationEndCallback = endCallback;
+	return this->pImpl->calibrationListeners.erase( listener );
 }
 
 

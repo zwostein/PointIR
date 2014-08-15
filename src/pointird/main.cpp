@@ -40,7 +40,7 @@
 
 
 static const char * notice =
-"PointIR Daemon (compiled " __TIME__ ", " __DATE__ " )\n"
+"PointIR Daemon (compiled " __TIME__ ", " __DATE__ ")\n"
 "This program processes a video stream to detect bright spots that are interpreted as \"touches\" for an emulated absolute pointing device (Touchscreen).\n"
 "Copyright © 2014 Tobias Himmer <provisorisch@online.de>";
 
@@ -55,17 +55,41 @@ void shutdownHandler( int s )
 }
 
 
-//TODO: implement calibration callbacks using a configurable system() call
-void calibrationBegin()
+class CalibrationHook : public Processor::ACalibrationListener
 {
-	std::cerr << "calibrationBegin\n";
-}
+public:
+	CalibrationHook( const std::string & beginHook, const std::string & endHook ) :
+		beginHook(beginHook), endHook(endHook)
+	{}
 
+	void setBeginHook( const std::string & beginHook ) { this->beginHook = beginHook; }
+	void setEndHook( const std::string & endHook ) { this->endHook = endHook; }
+	const std::string & getBeginHook() { return this->beginHook; }
+	const std::string & getEndHook() { return this->endHook; }
 
-void calibrationEnd()
-{
-	std::cerr << "calibrationEnd\n";
-}
+	virtual void calibrationBegin() override
+	{
+		std::cout << "CalibrationHook: Begin calibration - executing \"" << beginHook << "\"\n";
+		std::cout << "--------\n";
+		int ret = system( beginHook.c_str() );
+		std::cout << "--------\n";
+		std::cout << "CalibrationHook: \"" << beginHook << "\" returned " << ret << "\n";
+	}
+
+	virtual void calibrationEnd( bool success ) override
+	{
+		std::string call = endHook + " " + (success?"1":"0");
+		std::cout << "CalibrationHook: End calibration (" << (success?"success":"failure") << ") - executing \"" << call << "\"\n";
+		std::cout << "--------\n";
+		int ret = system( call.c_str() );
+		std::cout << "--------\n";
+		std::cout << "CalibrationHook: \"" << endHook << "\" returned " << ret << "\n";
+	}
+
+private:
+	std::string beginHook;
+	std::string endHook;
+};
 
 
 int main( int argc, char ** argv )
@@ -77,6 +101,7 @@ int main( int argc, char ** argv )
 	int height = 240;
 	float fps = 30.0f;
 	std::vector<std::string> outputNames( {"uinput", "socket"} );
+	CalibrationHook calibrationHook( "/etc/PointIR/calibrationBeginHook", "/etc/PointIR/calibrationEndHook" );
 	////////////////////////////////////////////////////////////////
 
 
@@ -118,6 +143,16 @@ int main( int argc, char ** argv )
 			__DATE__ // version
 		);
 
+		TCLAP::ValueArg<std::string> calibrationBeginHookArg(
+			"", "beginCalibHook",
+			"Script to execute when Calibration started.\nDefaults to \"" + calibrationHook.getBeginHook() + "\"",
+			false, calibrationHook.getBeginHook(), "string", cmd );
+
+		TCLAP::ValueArg<std::string> calibrationEndHookArg(
+			"", "endCalibHook",
+			"Script to execute when Calibration finished.\nDefaults to \"" + calibrationHook.getEndHook() + "\"",
+			false, calibrationHook.getEndHook(), "string", cmd );
+
 		TCLAP::ValueArg<std::string> deviceArg(
 			"d", "device",
 			"The camera device used to capture the video stream.\nDefaults to \"" + device + "\"",
@@ -145,6 +180,8 @@ int main( int argc, char ** argv )
 
 		cmd.parse( argc, argv );
 
+		calibrationHook.setBeginHook( calibrationBeginHookArg.getValue() );
+		calibrationHook.setEndHook( calibrationEndHookArg.getValue() );
 		device = deviceArg.getValue();
 		width = widthArg.getValue();
 		height = heigthArg.getValue();
@@ -179,8 +216,7 @@ int main( int argc, char ** argv )
 
 	Processor processor( capture, detector, unprojector );
 	processor.setPointFilter( &pointFilterChain );
-	processor.setCalibrationBeginCallback( calibrationBegin );
-	processor.setCalibrationEndCallback( calibrationEnd );
+	processor.addCalibrationListener( &calibrationHook );
 
 	outputFactory.setProcessor( &processor );
 	for( std::string & outputName : outputNames )

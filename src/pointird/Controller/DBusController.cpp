@@ -183,27 +183,55 @@ public:
 	}
 
 
-	void calibrationResultCallback( bool result, DBusConnection * connection, DBusMessage * message )
+	class CalibrationResultHandler : public Processor::ACalibrationListener
 	{
-		DBusMessageIter args;
+	public:
+		static void handleCalibrationResult( Processor & processor, DBusConnection * connection, DBusMessage * message )
+		{
+			new CalibrationResultHandler( processor, connection, message );
+		}
 
-		// dbus_message_iter_append_basic needs this or it will read uninitialized data! (sizeof dbus_bool_t > bool)
-		dbus_bool_t ret = result;
+		virtual void calibrationEnd( bool success ) override
+		{
+			DBusMessageIter args;
 
-		// generate reply message
-		DBusMessage * reply = dbus_message_new_method_return ( message );
-		dbus_message_iter_init_append( reply, &args );
-		if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_BOOLEAN, &ret ) )
-			throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
+			// dbus_message_iter_append_basic needs this or it will read uninitialized data! (sizeof dbus_bool_t > bool)
+			dbus_bool_t ret = success;
 
-		// send reply message
-		if( !dbus_connection_send( connection, reply, nullptr ) )
-			throw RUNTIME_ERROR( "dbus_connection_send failed" );
-		dbus_message_unref( reply );
+			// generate reply message
+			DBusMessage * reply = dbus_message_new_method_return ( this->message );
+			dbus_message_iter_init_append( reply, &args );
+			if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_BOOLEAN, &ret ) )
+				throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
 
-		// clean up message
-		dbus_message_unref( message );
-	}
+			// send reply message
+			if( !dbus_connection_send( this->connection, reply, nullptr ) )
+				throw RUNTIME_ERROR( "dbus_connection_send failed" );
+			dbus_message_unref( reply );
+
+			// clean up message
+			dbus_message_unref( this->message );
+
+			// delete self
+			delete this;
+		}
+
+	private:
+		CalibrationResultHandler( Processor & processor, DBusConnection * connection, DBusMessage * message ) :
+			processor(processor), connection(connection), message(message)
+		{
+			this->processor.addCalibrationListener( this );
+		}
+
+		virtual ~CalibrationResultHandler()
+		{
+			this->processor.removeCalibrationListener( this );
+		}
+
+		Processor & processor;
+		DBusConnection * connection;
+		DBusMessage * message;
+	};
 
 
 	void calibrate( DBusConnection * connection, DBusMessage * message )
@@ -216,8 +244,9 @@ public:
 		// keep this message until callback is received
 		dbus_message_ref( message );
 
-		// execute method
-		this->processor.startCalibration( std::bind( &Impl::calibrationResultCallback, this, std::placeholders::_1, connection, message ) );
+		// register callback handler and execute method
+		CalibrationResultHandler::handleCalibrationResult( this->processor, connection, message );
+		this->processor.startCalibration();
 	}
 
 
