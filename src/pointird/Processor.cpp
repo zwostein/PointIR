@@ -38,6 +38,8 @@
 class Processor::Impl
 {
 public:
+	Impl( Processor & processor ) : processor(processor) {}
+
 	APointFilter * filter = nullptr;
 
 	std::set< AFrameOutput * > frameOutputs;
@@ -53,18 +55,26 @@ public:
 	{
 		this->calibrationSucceeded = result;
 		this->calibrating = false;
+
 		for( auto it = this->calibrationListeners.begin(); it != this->calibrationListeners.end(); )
 		{
 			auto current = it;
 			it++;
 			(*current)->calibrationEnd( result );
 		}
+
+		// flush video buffers
+		this->processor.capture.stop();
+		this->processor.capture.start();
 	}
+
+private:
+	Processor & processor;
 };
 
 
 Processor::Processor( ACapture & capture, APointDetector & detector, AUnprojector & unprojector ) :
-	pImpl( new Impl() ),
+	pImpl( new Impl( *this ) ),
 	capture(capture),
 	detector(detector),
 	unprojector(unprojector)

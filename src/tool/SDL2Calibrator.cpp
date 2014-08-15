@@ -343,62 +343,62 @@ int main( int argc, char ** argv )
 		{
 			switch( e.type )
 			{
-				case SDL_QUIT:
+			case SDL_QUIT:
+				closeRequested = true;
+				break;
+			case SDL_KEYDOWN:
+				switch( e.key.keysym.sym )
+				{
+				case SDLK_ESCAPE:
 					closeRequested = true;
 					break;
-				case SDL_KEYDOWN:
-					switch( e.key.keysym.sym )
+				case SDLK_SPACE:
+					calibrate = true;
+					break;
+				case SDLK_RETURN:
+					if( SDL_GetModState() & KMOD_ALT )
 					{
-					case SDLK_ESCAPE:
-						closeRequested = true;
-						break;
-					case SDLK_SPACE:
-						calibrate = true;
-						break;
-					case SDLK_RETURN:
-						if( SDL_GetModState() & KMOD_ALT )
+						static Uint32 lastFullscreenFlags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+						Uint32 fullscreenFlags = SDL_GetWindowFlags( window ) & ( SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP );
+						if( fullscreenFlags )
 						{
-							static Uint32 lastFullscreenFlags = SDL_WINDOW_FULLSCREEN_DESKTOP;
-							Uint32 fullscreenFlags = SDL_GetWindowFlags( window ) & ( SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP );
-							if( fullscreenFlags )
-							{
-								lastFullscreenFlags = fullscreenFlags;
-								fullscreenFlags = 0;
-							}
-							else
-							{
-								fullscreenFlags = lastFullscreenFlags;
-							}
-							SDL_SetWindowFullscreen( window, fullscreenFlags );
+							lastFullscreenFlags = fullscreenFlags;
+							fullscreenFlags = 0;
 						}
-						break;
+						else
+						{
+							fullscreenFlags = lastFullscreenFlags;
+						}
+						SDL_SetWindowFullscreen( window, fullscreenFlags );
 					}
 					break;
-				case SDL_FINGERDOWN:
+				}
+				break;
+			case SDL_FINGERDOWN:
+				{
+					Touch t;
+					t.point.x = e.tfinger.x;
+					t.point.y = e.tfinger.y;
+					t.r = rand() % 128 + 127;
+					t.g = rand() % 128 + 127;
+					t.b = rand() % 128 + 127;
+					touches[ e.tfinger.fingerId ] = t;
+				}
+				break;
+			case SDL_FINGERUP:
+				touches.erase( e.tfinger.fingerId );
+				break;
+			case SDL_FINGERMOTION:
+				{
+					auto i = touches.find( e.tfinger.fingerId );
+					if( i != touches.end() )
 					{
-						Touch t;
+						Touch & t = i->second;
 						t.point.x = e.tfinger.x;
 						t.point.y = e.tfinger.y;
-						t.r = rand() % 128 + 127;
-						t.g = rand() % 128 + 127;
-						t.b = rand() % 128 + 127;
-						touches[ e.tfinger.fingerId ] = t;
 					}
-					break;
-				case SDL_FINGERUP:
-					touches.erase( e.tfinger.fingerId );
-					break;
-				case SDL_FINGERMOTION:
-					{
-						auto i = touches.find( e.tfinger.fingerId );
-						if( i != touches.end() )
-						{
-							Touch & t = i->second;
-							t.point.x = e.tfinger.x;
-							t.point.y = e.tfinger.y;
-						}
-					}
-					break;
+				}
+				break;
 			}
 		}
 
@@ -410,7 +410,6 @@ int main( int argc, char ** argv )
 			calibrate = false;
 			SDL_RenderCopy( renderer, calibrationImageTexture, nullptr, nullptr );
 			SDL_RenderPresent( renderer );
-			sleep(1);
 			if( dBusGetBool( dBusConnection, "PointIR.Controller.Processor", "calibrate" ) )
 			{
 				std::cout << "Calibration succeeded :)\n";

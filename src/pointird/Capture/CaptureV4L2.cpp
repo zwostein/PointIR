@@ -109,7 +109,7 @@ public:
 
 	int fd = 0;
 	std::vector<Buffer> buffers;
-	unsigned int minBufferCount = 4;
+	unsigned int minBufferCount = 2;
 	int currentBuffer = -1;
 	unsigned int bytesPerLine = 0;
 	struct v4l2_capability caps = {};
