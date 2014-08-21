@@ -326,7 +326,8 @@ int main( int argc, char ** argv )
 	while( running )
 	{
 		//TODO: instead of polling the "isProcessing" flag, maybe put controllers in threads and use some blocking mechanism?
-//		controller.dispatch();
+		for( auto controller : controllers )
+			controller->dispatch();
 		if( processor.isProcessing() )
 			processor.processFrame();
 		else
@@ -340,9 +341,7 @@ int main( int argc, char ** argv )
 	// cleanup
 
 	for( auto controller : controllers )
-	{
 		delete controller;
-	}
 
 	delete capture;
 
