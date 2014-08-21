@@ -22,9 +22,15 @@
 #include "Processor.hpp"
 
 #include "PointOutput/DebugPointOutputCV.hpp"
-#include "PointOutput/PointOutputUinput.hpp"
-#include "PointOutput/UnixDomainSocketPointOutput.hpp"
-#include "FrameOutput/UnixDomainSocketFrameOutput.hpp"
+
+#ifdef POINTIR_UINPUT
+	#include "PointOutput/PointOutputUinput.hpp"
+#endif
+
+#ifdef POINTIR_UNIXDOMAINSOCKET
+	#include "PointOutput/UnixDomainSocketPointOutput.hpp"
+	#include "FrameOutput/UnixDomainSocketFrameOutput.hpp"
+#endif
 
 #include <map>
 #include <functional>
@@ -45,12 +51,16 @@ public:
 
 OutputFactory::OutputFactory() : pImpl( new Impl )
 {
+#ifdef POINTIR_UINPUT
 	this->pImpl->pointOutputMap.insert( { "uinput", [] ()
 		{ return new PointOutputUinput; }
 	} );
+#endif
+#ifdef POINTIR_UNIXDOMAINSOCKET
 	this->pImpl->pointOutputMap.insert( { "socket", [] ()
 		{ return new UnixDomainSocketPointOutput; }
 	} );
+#endif
 	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *
 		{
 			if( this->processor )
@@ -60,9 +70,11 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 		}
 	} );
 
+#ifdef POINTIR_UNIXDOMAINSOCKET
 	this->pImpl->frameOutputMap.insert( { "socket", [] ()
 		{ return new UnixDomainSocketFrameOutput; }
 	} );
+#endif
 }
 
 
@@ -73,8 +85,6 @@ OutputFactory::~OutputFactory()
 
 APointOutput * OutputFactory::newPointOutput( const std::string name ) const
 {
-	if( !this->processor )
-		return nullptr;
 	Impl::PointOutputMap::const_iterator it = this->pImpl->pointOutputMap.find( name );
 	if( it == this->pImpl->pointOutputMap.end() )
 		return nullptr;
@@ -85,8 +95,6 @@ APointOutput * OutputFactory::newPointOutput( const std::string name ) const
 
 AFrameOutput * OutputFactory::newFrameOutput( const std::string name ) const
 {
-	if( !this->processor )
-		return nullptr;
 	Impl::FrameOutputMap::const_iterator it = this->pImpl->frameOutputMap.find( name );
 	if( it == this->pImpl->frameOutputMap.end() )
 		return nullptr;

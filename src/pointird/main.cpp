@@ -21,22 +21,28 @@
 #include <vector>
 
 #include <unistd.h>
-#include <signal.h>
-#include <string.h>
+#ifdef __unix__
+	#include <signal.h>
+	#include <string.h>
+#endif
 
 #include <tclap/CmdLine.h>
 
+#include "OutputFactory.hpp"
+#include "Capture/ACapture.hpp"
+
+#include "CaptureFactory.hpp"
+#include "PointOutput/APointOutput.hpp"
+#include "FrameOutput/AFrameOutput.hpp"
+
 #include "Controller/DBusController.hpp"
-#include "Capture/CaptureV4L2.hpp"
 #include "PointDetector/PointDetectorCV.hpp"
 #include "Unprojector/AutoUnprojectorCV.hpp"
 #include "Unprojector/CalibrationDataFile.hpp"
 #include "PointFilter/OffscreenFilter.hpp"
 #include "PointFilter/PointFilterChain.hpp"
-#include "PointOutput/APointOutput.hpp"
-#include "FrameOutput/AFrameOutput.hpp"
+
 #include "Processor.hpp"
-#include "OutputFactory.hpp"
 
 
 static const char * notice =
@@ -47,13 +53,13 @@ static const char * notice =
 
 static volatile bool running = true;
 
-
+#ifdef __unix__
 void shutdownHandler( int s )
 {
 	std::cerr << "Received signal " << s << " \"" << strsignal(s) << "\", shutting down!\n";
 	running = false;
 }
-
+#endif
 
 class CalibrationHook : public Processor::ACalibrationListener
 {
@@ -94,17 +100,24 @@ private:
 
 int main( int argc, char ** argv )
 {
+	OutputFactory outputFactory;
+	CaptureFactory captureFactory;
+
 	////////////////////////////////////////////////////////////////
 	// default daemon settings
-	std::string device = "/dev/video0";
-	int width = 320;
-	int height = 240;
-	float fps = 30.0f;
+#ifdef __unix__
+	std::string captureName = "v4l2";
 	std::vector<std::string> outputNames( {"uinput", "socket"} );
 	CalibrationHook calibrationHook( "/etc/PointIR/calibrationBeginHook", "/etc/PointIR/calibrationEndHook" );
+#else
+	std::string captureName = "cv";
+	std::vector<std::string> outputNames;
+	CalibrationHook calibrationHook( "pointir_calibrationBeginHook", "pointir_calibrationEndHook" );
+#endif
 	////////////////////////////////////////////////////////////////
 
 
+#ifdef __unix__
 	////////////////////////////////////////////////////////////////
 	// signal setup
 
@@ -119,22 +132,10 @@ int main( int argc, char ** argv )
 	signal( SIGPIPE, SIG_IGN );
 
 	////////////////////////////////////////////////////////////////
-
+#endif
 
 	////////////////////////////////////////////////////////////////
 	// process command line options
-
-	// create a list of available outputs that can be added later
-	OutputFactory outputFactory;
-	std::vector< std::string > availableOutputNames = outputFactory.getAvailableOutputs();
-	TCLAP::ValuesConstraint<std::string> outputsArgConstraint( availableOutputNames );
-
-	// default list
-	std::string defaultOutputsAsArgument;
-	for( std::string & output : outputNames )
-		defaultOutputsAsArgument += "-o " + output + " ";
-	defaultOutputsAsArgument.pop_back();
-
 	try
 	{
 		TCLAP::CmdLine cmd(
@@ -153,26 +154,38 @@ int main( int argc, char ** argv )
 			"Script to execute when Calibration finished. An additional argument is appended on execution, indicating whether the calibration succeeded (1 for success, 0 for failure).\nDefaults to \"" + calibrationHook.getEndHook() + "\"",
 			false, calibrationHook.getEndHook(), "string", cmd );
 
-		TCLAP::ValueArg<std::string> deviceArg(
+		TCLAP::ValueArg<std::string> deviceNameArg(
 			"d", "device",
-			"The camera device used to capture the video stream.\nDefaults to \"" + device + "\"",
-			false, device, "string", cmd );
+			"The camera device used to capture the video stream.\nDefaults to \"" + captureFactory.deviceName + "\"",
+			false, captureFactory.deviceName, "string", cmd );
 
 		TCLAP::ValueArg<int> widthArg(
 			"", "width",
-			"Width of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(width),
-			false, width, "int", cmd );
+			"Width of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.width),
+			false, captureFactory.width, "int", cmd );
 
 		TCLAP::ValueArg<int> heigthArg(
 			"", "height",
-			"Height of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(height),
-			false, height, "int", cmd );
+			"Height of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.height),
+			false, captureFactory.height, "int", cmd );
 
 		TCLAP::ValueArg<float> fpsArg(
 			"", "fps",
-			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(fps),
-			false, fps, "float", cmd );
+			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.fps),
+			false, captureFactory.fps, "float", cmd );
 
+		TCLAP::ValueArg<std::string> captureArg(
+			"", "capture",
+			"The capture module used to retrieve the video stream.\nDefaults to \"" + captureName + "\"",
+			false, captureName, "string", cmd );
+
+		std::vector< std::string > availableOutputNames = outputFactory.getAvailableOutputs();
+		TCLAP::ValuesConstraint<std::string> outputsArgConstraint( availableOutputNames );
+		std::string defaultOutputsAsArgument;
+		for( std::string & output : outputNames )
+			defaultOutputsAsArgument += "-o " + output + " ";
+		if( defaultOutputsAsArgument.size() )
+			defaultOutputsAsArgument.pop_back();
 		TCLAP::MultiArg<std::string> outputsArg(
 			"o",  "output",
 			"Adds one or more output modules.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
@@ -182,10 +195,11 @@ int main( int argc, char ** argv )
 
 		calibrationHook.setBeginHook( calibrationBeginHookArg.getValue() );
 		calibrationHook.setEndHook( calibrationEndHookArg.getValue() );
-		device = deviceArg.getValue();
-		width = widthArg.getValue();
-		height = heigthArg.getValue();
-		fps = fpsArg.getValue();
+		captureName = captureArg.getValue();
+		captureFactory.deviceName = deviceNameArg.getValue();
+		captureFactory.width = widthArg.getValue();
+		captureFactory.height = heigthArg.getValue();
+		captureFactory.fps = fpsArg.getValue();
 		if( !outputsArg.getValue().empty() )
 			outputNames = outputsArg.getValue();
 	}
@@ -201,7 +215,12 @@ int main( int argc, char ** argv )
 	////////////////////////////////////////////////////////////////
 	// build frame processor
 
-	CaptureV4L2 capture( device, width, height, fps );
+	ACapture * capture = captureFactory.newCapture( captureName );
+	if( !capture )
+	{
+		std::cerr << "Could not create capture \"" << captureName << "\"\n";
+		return 1;
+	}
 
 	PointDetectorCV detector;
 	detector.setBoundingFilterEnabled( true );
@@ -214,11 +233,11 @@ int main( int argc, char ** argv )
 	OffscreenFilter offscreenFilter;
 	pointFilterChain.appendFilter( &offscreenFilter );
 
-	Processor processor( capture, detector, unprojector );
+	Processor processor( *capture, detector, unprojector );
 	processor.setPointFilter( &pointFilterChain );
 	processor.addCalibrationListener( &calibrationHook );
 
-	outputFactory.setProcessor( &processor );
+	outputFactory.processor = &processor;
 	for( std::string & outputName : outputNames )
 	{
 		APointOutput * pointOutput = outputFactory.newPointOutput( outputName );
@@ -228,6 +247,12 @@ int main( int argc, char ** argv )
 		AFrameOutput * frameOutput = outputFactory.newFrameOutput( outputName );
 		if( frameOutput )
 			processor.addFrameOutput( frameOutput );
+
+		if( !pointOutput && ! frameOutput )
+		{
+			std::cerr << "Could not create output \"" << outputName << "\"\n";
+			return 1;
+		}
 	}
 
 	////////////////////////////////////////////////////////////////
@@ -235,7 +260,7 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 	// create processor controllers
-	DBusController controller( processor );
+//	DBusController controller( processor );
 	////////////////////////////////////////////////////////////////
 
 
@@ -245,7 +270,7 @@ int main( int argc, char ** argv )
 	while( running )
 	{
 		//TODO: instead of polling the "isProcessing" flag, maybe put controllers in threads and use some blocking mechanism?
-		controller.dispatch();
+//		controller.dispatch();
 		if( processor.isProcessing() )
 			processor.processFrame();
 		else
@@ -257,6 +282,8 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 	// cleanup
+
+	delete capture;
 
 	for( auto output : processor.getPointOutputs() )
 	{

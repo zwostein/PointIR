@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _OUTPUTADDER__INCLUDED_
-#define _OUTPUTADDER__INCLUDED_
+#ifndef _OUTPUTFACTORY__INCLUDED_
+#define _OUTPUTFACTORY__INCLUDED_
 
 
 #include <memory>
@@ -44,13 +44,11 @@ public:
 	std::vector< std::string > getAvailableFrameOutputs() const;
 	std::vector< std::string > getAvailableOutputs() const;
 
-	void setProcessor( const Processor * processor ) { this->processor = processor; }
+	const Processor * processor = nullptr;
 
 private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
-
-	const Processor * processor;
 };
 
 

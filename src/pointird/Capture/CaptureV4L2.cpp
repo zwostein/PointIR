@@ -357,7 +357,7 @@ void CaptureV4L2::stop()
 }
 
 
-unsigned int CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
+bool CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 {
 	if( block )
 	{
@@ -391,7 +391,7 @@ unsigned int CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 			if( 0 == r )
 			{
 				std::cerr << "\"" << this->device << "\": " << "timed out\n";
-				return 0;
+				return false;
 			}
 			break;
 		}
@@ -406,7 +406,7 @@ unsigned int CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 		switch( errno )
 		{
 		case EAGAIN:
-			return 0;
+			return false;
 		case EIO:
 			// Could ignore EIO, see spec.
 			// fall through
@@ -423,7 +423,7 @@ unsigned int CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 		throw SYSTEM_ERROR( errno, "ioctl(\"" + this->device + "\",VIDIOC_QBUF)" );
 
 	this->pImpl->currentBuffer = buf.index;
-	return 1;
+	return true;
 }
 
 

@@ -27,13 +27,14 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
-#include <poll.h>
 #include <malloc.h>
 #include <fcntl.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
+#ifdef __unix__
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <sys/un.h>
+#endif
 
 #include <iostream>
 #include <map>
@@ -59,9 +60,9 @@ constexpr static const char * videoSocketName = "/tmp/PointIR.video.socket";
 static SDL_Texture * receiveFrame( SDL_Renderer * renderer, int socketFD )
 {
 	static SDL_Texture * videoTexture = nullptr;
+#ifdef __unix__
 	static size_t bufferSize = sizeof(PointIR_Frame);
 	static PointIR_Frame * buffer = (PointIR_Frame *) calloc( 1, bufferSize );
-
 	ssize_t received;
 
 	// peek at the next packet - return last frame if nothing received
@@ -110,6 +111,7 @@ static SDL_Texture * receiveFrame( SDL_Renderer * renderer, int socketFD )
 	}
 
 	SDL_UpdateTexture( videoTexture, nullptr, frame3.data(), buffer->width * 3 );
+#endif
 	return videoTexture;
 }
 
@@ -258,7 +260,7 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 
-
+#ifdef __unix__
 	////////////////////////////////////////////////////////////////
 	// video socket init
 
@@ -281,7 +283,9 @@ int main( int argc, char ** argv )
 		throw SYSTEM_ERROR( errno, "connect" );
 
 	////////////////////////////////////////////////////////////////
-
+#else
+	int videoFD = -1;
+#endif
 
 	////////////////////////////////////////////////////////////////
 	// SDL2 init

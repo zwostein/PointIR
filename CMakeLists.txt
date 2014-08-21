@@ -1,26 +1,15 @@
 cmake_minimum_required( VERSION 2.8 )
 project( PointIR )
 
-set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules" ${CMAKE_MODULE_PATH} )
 
-set( EXECUTABLE_NAME "pointird" )
-add_executable( ${EXECUTABLE_NAME}
-	src/lodepng.cpp
-	src/pointird/main.cpp
-	src/pointird/Processor.cpp
-	src/pointird/OutputFactory.cpp
-	src/pointird/Capture/CaptureV4L2.cpp
-	src/pointird/FrameOutput/UnixDomainSocketFrameOutput.cpp
-	src/pointird/PointDetector/PointDetectorCV.cpp
-	src/pointird/Unprojector/AutoUnprojectorCV.cpp
-	src/pointird/Unprojector/CalibrationDataFile.cpp
-	src/pointird/Unprojector/CalibrationImageFile.cpp
-	src/pointird/PointFilter/OffscreenFilter.cpp
-	src/pointird/PointOutput/DebugPointOutputCV.cpp
-	src/pointird/PointOutput/UnixDomainSocketPointOutput.cpp
-	src/pointird/PointOutput/PointOutputUinput.cpp
-	src/pointird/Controller/DBusController.cpp
-)
+################################################################
+# General project setup
+
+if( CMAKE_SYSTEM_NAME STREQUAL Linux )
+	set( LINUX ON )
+endif()
+
+set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules" ${CMAKE_MODULE_PATH} )
 
 include_directories( "${CMAKE_SOURCE_DIR}/src" )
 include_directories( "${CMAKE_SOURCE_DIR}/include" )
@@ -30,26 +19,88 @@ if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11" )
 endif()
 
-option( USE_SYSTEM_TCLAP "Use system TCLAP installation" OFF )
-if( NOT USE_SYSTEM_TCLAP )
+################################################################
+
+
+################################################################
+# Daemon executable
+
+set( POINTIR_EXECUTABLE_NAME "pointird" )
+
+set( POINTIR_SOURCES
+	src/lodepng.cpp
+	src/pointird/main.cpp
+	src/pointird/Processor.cpp
+	src/pointird/CaptureFactory.cpp
+	src/pointird/OutputFactory.cpp
+	src/pointird/Unprojector/CalibrationDataFile.cpp
+	src/pointird/Unprojector/CalibrationImageFile.cpp
+	src/pointird/PointFilter/OffscreenFilter.cpp
+
+	src/pointird/Capture/CaptureCV.cpp
+	src/pointird/PointDetector/PointDetectorCV.cpp
+	src/pointird/Unprojector/AutoUnprojectorCV.cpp
+	src/pointird/PointOutput/DebugPointOutputCV.cpp
+
+	src/pointird/Controller/DBusController.cpp
+)
+
+option( POINTIR_UNIXDOMAINSOCKET "Enable use of Unix Domain Sockets for point output and video stream" ${UNIX} )
+option( POINTIR_UINPUT "Enable uinput API for multitouch device emulation output" ${LINUX} )
+option( POINTIR_V4L2 "Enable Video4Linux2 API for video capture" ${LINUX} )
+
+if( POINTIR_UINPUT )
+	set( POINTIR_SOURCES ${POINTIR_SOURCES}
+		src/pointird/PointOutput/PointOutputUinput.cpp
+	)
+	add_definitions( -DPOINTIR_UINPUT )
+endif()
+
+if( POINTIR_UNIXDOMAINSOCKET )
+	set( POINTIR_SOURCES ${POINTIR_SOURCES}
+		src/pointird/FrameOutput/UnixDomainSocketFrameOutput.cpp
+		src/pointird/PointOutput/UnixDomainSocketPointOutput.cpp
+	)
+	add_definitions( -DPOINTIR_UNIXDOMAINSOCKET )
+endif()
+
+if( POINTIR_V4L2 )
+	set( POINTIR_SOURCES ${POINTIR_SOURCES}
+		src/pointird/Capture/CaptureV4L2.cpp
+	)
+	add_definitions( -DPOINTIR_V4L2 )
+endif()
+
+add_executable( ${POINTIR_EXECUTABLE_NAME} ${POINTIR_SOURCES} )
+
+option( POINTIR_USE_SYSTEM_TCLAP "Use system TCLAP installation" OFF )
+if( NOT POINTIR_USE_SYSTEM_TCLAP )
 	include_directories( "${CMAKE_SOURCE_DIR}/external/tclap/include" )
 endif()
 
 find_package( OpenCV REQUIRED )
-target_link_libraries( ${EXECUTABLE_NAME} ${OpenCV_LIBS} )
+target_link_libraries( ${POINTIR_EXECUTABLE_NAME} ${OpenCV_LIBS} )
 
 find_package( DBus REQUIRED )
 include_directories( ${DBUS_INCLUDE_DIRS} )
-target_link_libraries( ${EXECUTABLE_NAME} ${DBUS_LIBRARIES} )
+target_link_libraries( ${POINTIR_EXECUTABLE_NAME} ${DBUS_LIBRARIES} )
 
+if( WIN32 )
+	target_link_libraries( ${POINTIR_EXECUTABLE_NAME} winmm imm32 version iphlpapi ws2_32 tiff lzma IlmImf z )
+endif()
+
+################################################################
+
+
+################################################################
+# Optional executables
 
 option( POINTIR_BUILD_EXAMPLES "Builds example programs for testing" OFF )
 option( POINTIR_BUILD_TOOLS "Builds tools for calibration etc" ON )
 
-
 if( POINTIR_BUILD_EXAMPLES OR POINTIR_BUILD_TOOLS )
-	option( USE_SYSTEM_SDL2 "Use system SDL2 installation" OFF )
-	if( NOT USE_SYSTEM_SDL2 )
+	option( POINTIR_USE_SYSTEM_SDL2 "Use system SDL2 installation" OFF )
+	if( NOT POINTIR_USE_SYSTEM_SDL2 )
 		add_subdirectory( "external/SDL2" )
 		include_directories( "${CMAKE_SOURCE_DIR}/external/SDL2/include" )
 		set( SDL2_LIBRARY SDL2-static )
@@ -62,16 +113,22 @@ if( POINTIR_BUILD_EXAMPLES OR POINTIR_BUILD_TOOLS )
 	endif()
 endif()
 
-
 if( POINTIR_BUILD_EXAMPLES )
-	set( EXECUTABLE_NAME_EXAMPLE_SDL2 "pointir_example_SDL2" )
-	add_executable( ${EXECUTABLE_NAME_EXAMPLE_SDL2} src/example/SDL2.cpp )
-	target_link_libraries( ${EXECUTABLE_NAME_EXAMPLE_SDL2} ${SDL2_LIBRARY} )
+	set( POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2 "pointir_example_SDL2" )
+	add_executable( ${POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2} src/example/SDL2.cpp )
+	target_link_libraries( ${POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2} ${SDL2_LIBRARY} )
+	if( WIN32 )
+		target_link_libraries( ${POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2} winmm dxguid imm32 version iphlpapi ws2_32 )
+	endif()
 endif()
-
 
 if( POINTIR_BUILD_TOOLS )
-	set( EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR "pointir_calibrate_SDL2" )
-	add_executable( ${EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} src/tool/SDL2Calibrator.cpp src/lodepng.cpp )
-	target_link_libraries( ${EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} ${SDL2_LIBRARY} ${DBUS_LIBRARIES} )
+	set( POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR "pointir_calibrate_SDL2" )
+	add_executable( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} src/tool/SDL2Calibrator.cpp src/lodepng.cpp )
+	target_link_libraries( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} ${SDL2_LIBRARY} ${DBUS_LIBRARIES} )
+	if( WIN32 )
+		target_link_libraries( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} winmm dxguid imm32 version iphlpapi ws2_32 )
+	endif()
 endif()
+
+################################################################

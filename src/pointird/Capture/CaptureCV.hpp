@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CAPTUREV4L2__INCLUDED_
-#define _CAPTUREV4L2__INCLUDED_
+#ifndef _CAPTURECV__INCLUDED_
+#define _CAPTURECV__INCLUDED_
 
 
 #include "ACapture.hpp"
@@ -27,13 +27,14 @@
 #include <string>
 
 
-class CaptureV4L2 : public ACapture
+class CaptureCV : public ACapture
 {
 public:
-	CaptureV4L2( const CaptureV4L2 & ) = delete; // disable copy constructor
+	CaptureCV( const CaptureCV & ) = delete; // disable copy constructor
 
-	CaptureV4L2( const std::string & device, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
-	virtual ~CaptureV4L2();
+	CaptureCV( int deviceNr = 0, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
+	CaptureCV( const std::string & fileName, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
+	virtual ~CaptureCV();
 
 	virtual void start() override;
 	virtual bool advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) override;
@@ -42,19 +43,14 @@ public:
 
 	virtual bool isCapturing() const override { return this->capturing; };
 
-	std::string getName() const;
 	unsigned int getWidth() const { return this->width; }
 	unsigned int getHeight() const { return this->height; }
-	std::string getDevice() const { return this->device; }
-	bool canStream() const;
-	bool canCaptureVideo() const;
-
 	float getFPS() const { return this->fps; }
 
 private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
-	std::string device;
+
 	unsigned int width;
 	unsigned int height;
 	float fps;

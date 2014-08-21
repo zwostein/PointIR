@@ -35,15 +35,14 @@ namespace PointIR
 class ACapture
 {
 public:
+	virtual ~ACapture() {}
+
 	virtual void start() = 0;
-	virtual unsigned int advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) = 0;
+	virtual bool advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) = 0;
 	virtual bool retrieveFrame( PointIR::Frame & frame ) const = 0;
 	virtual void stop() = 0;
 
 	virtual bool isCapturing() const = 0;
-	virtual std::string getName() const = 0;
-	virtual unsigned int getWidth() const = 0;
-	virtual unsigned int getHeight() const = 0;
 };
 
 
