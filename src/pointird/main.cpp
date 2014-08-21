@@ -29,16 +29,20 @@
 #include <tclap/CmdLine.h>
 
 #include "OutputFactory.hpp"
-#include "Capture/ACapture.hpp"
-
-#include "CaptureFactory.hpp"
 #include "PointOutput/APointOutput.hpp"
 #include "FrameOutput/AFrameOutput.hpp"
 
-#include "Controller/DBusController.hpp"
+#include "CaptureFactory.hpp"
+#include "Capture/ACapture.hpp"
+
+#include "ControllerFactory.hpp"
+#include "Controller/AController.hpp"
+
 #include "PointDetector/PointDetectorCV.hpp"
+
 #include "Unprojector/AutoUnprojectorCV.hpp"
 #include "Unprojector/CalibrationDataFile.hpp"
+
 #include "PointFilter/OffscreenFilter.hpp"
 #include "PointFilter/PointFilterChain.hpp"
 
@@ -64,10 +68,6 @@ void shutdownHandler( int s )
 class CalibrationHook : public Processor::ACalibrationListener
 {
 public:
-	CalibrationHook( const std::string & beginHook, const std::string & endHook ) :
-		beginHook(beginHook), endHook(endHook)
-	{}
-
 	void setBeginHook( const std::string & beginHook ) { this->beginHook = beginHook; }
 	void setEndHook( const std::string & endHook ) { this->endHook = endHook; }
 	const std::string & getBeginHook() { return this->beginHook; }
@@ -75,6 +75,8 @@ public:
 
 	virtual void calibrationBegin() override
 	{
+		if( beginHook.empty() )
+			return;
 		std::cout << "CalibrationHook: Begin calibration - executing \"" << beginHook << "\"\n";
 		std::cout << "--------\n";
 		int ret = system( beginHook.c_str() );
@@ -84,6 +86,8 @@ public:
 
 	virtual void calibrationEnd( bool success ) override
 	{
+		if( endHook.empty() )
+			return;
 		std::string call = endHook + " " + (success?"1":"0");
 		std::cout << "CalibrationHook: End calibration (" << (success?"success":"failure") << ") - executing \"" << call << "\"\n";
 		std::cout << "--------\n";
@@ -102,18 +106,42 @@ int main( int argc, char ** argv )
 {
 	OutputFactory outputFactory;
 	CaptureFactory captureFactory;
+	ControllerFactory controllerFactory;
+
+	std::string captureName;
+	std::vector<std::string> outputNames;
+	std::vector<std::string> controllerNames;
+	CalibrationHook calibrationHook;
+
 
 	////////////////////////////////////////////////////////////////
 	// default daemon settings
-#ifdef __unix__
-	std::string captureName = "v4l2";
-	std::vector<std::string> outputNames( {"uinput", "socket"} );
-	CalibrationHook calibrationHook( "/etc/PointIR/calibrationBeginHook", "/etc/PointIR/calibrationEndHook" );
+
+#ifdef POINTIR_DBUS
+	captureName = "v4l2";
 #else
-	std::string captureName = "cv";
-	std::vector<std::string> outputNames;
-	CalibrationHook calibrationHook( "pointir_calibrationBeginHook", "pointir_calibrationEndHook" );
+	captureName = "cv";
 #endif
+
+#ifdef POINTIR_UINPUT
+	outputNames.push_back( "uinput" );
+#endif
+#ifdef POINTIR_UNIXDOMAINSOCKET
+	outputNames.push_back( "socket" );
+#endif
+
+#ifdef POINTIR_DBUS
+	controllerNames.push_back( "dbus" );
+#endif
+
+#ifdef __unix__
+	calibrationHook.setBeginHook( "/etc/PointIR/calibrationBeginHook" );
+	calibrationHook.setEndHook( "/etc/PointIR/calibrationEndHook" );
+#else
+	calibrationHook.setBeginHook( "pointir_calibrationBeginHook" );
+	calibrationHook.setEndHook( "pointir_calibrationEndHook" );
+#endif
+
 	////////////////////////////////////////////////////////////////
 
 
@@ -179,7 +207,7 @@ int main( int argc, char ** argv )
 			"The capture module used to retrieve the video stream.\nDefaults to \"" + captureName + "\"",
 			false, captureName, "string", cmd );
 
-		std::vector< std::string > availableOutputNames = outputFactory.getAvailableOutputs();
+		std::vector< std::string > availableOutputNames = outputFactory.getAvailableOutputNames();
 		TCLAP::ValuesConstraint<std::string> outputsArgConstraint( availableOutputNames );
 		std::string defaultOutputsAsArgument;
 		for( std::string & output : outputNames )
@@ -190,6 +218,18 @@ int main( int argc, char ** argv )
 			"o",  "output",
 			"Adds one or more output modules.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
 			false, &outputsArgConstraint, cmd );
+
+		std::vector< std::string > availableControllerNames = controllerFactory.getAvailableControllerNames();
+		TCLAP::ValuesConstraint<std::string> controllersArgConstraint( availableControllerNames );
+		std::string defaultControllersAsArgument;
+		for( std::string & controller : controllerNames )
+			defaultControllersAsArgument += "-c " + controller + " ";
+		if( defaultControllersAsArgument.size() )
+			defaultControllersAsArgument.pop_back();
+		TCLAP::MultiArg<std::string> contollersArg(
+			"c",  "controller",
+			"Adds one or more controller modules.\nSpecifying this will override the default (" + defaultControllersAsArgument + ")",
+			false, &controllersArgConstraint, cmd );
 
 		cmd.parse( argc, argv );
 
@@ -202,6 +242,8 @@ int main( int argc, char ** argv )
 		captureFactory.fps = fpsArg.getValue();
 		if( !outputsArg.getValue().empty() )
 			outputNames = outputsArg.getValue();
+		if( !contollersArg.getValue().empty() )
+			controllerNames = contollersArg.getValue();
 	}
 	catch( TCLAP::ArgException & e )
 	{
@@ -260,7 +302,21 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 	// create processor controllers
-//	DBusController controller( processor );
+
+	std::set< AController * > controllers;
+
+	controllerFactory.processor = &processor;
+	for( std::string & controllerName : controllerNames )
+	{
+		AController * controller = controllerFactory.newController( controllerName );
+		if( !controller )
+		{
+			std::cerr << "Could not create controller \"" << controllerName << "\"\n";
+			return 1;
+		}
+		controllers.insert( controller );
+	}
+
 	////////////////////////////////////////////////////////////////
 
 
@@ -282,6 +338,11 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 	// cleanup
+
+	for( auto controller : controllers )
+	{
+		delete controller;
+	}
 
 	delete capture;
 

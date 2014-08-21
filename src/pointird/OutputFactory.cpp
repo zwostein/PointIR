@@ -21,6 +21,9 @@
 
 #include "Processor.hpp"
 
+#include "FrameOutput/AFrameOutput.hpp"
+#include "PointOutput/APointOutput.hpp"
+
 #include "PointOutput/DebugPointOutputCV.hpp"
 
 #ifdef POINTIR_UINPUT
@@ -103,7 +106,7 @@ AFrameOutput * OutputFactory::newFrameOutput( const std::string name ) const
 }
 
 
-std::vector< std::string > OutputFactory::getAvailablePointOutputs() const
+std::vector< std::string > OutputFactory::getAvailablePointOutputNames() const
 {
 	std::vector< std::string > outputs;
 	for( Impl::PointOutputMap::const_iterator it = this->pImpl->pointOutputMap.begin(); it != this->pImpl->pointOutputMap.end(); ++it )
@@ -112,7 +115,7 @@ std::vector< std::string > OutputFactory::getAvailablePointOutputs() const
 }
 
 
-std::vector< std::string > OutputFactory::getAvailableFrameOutputs() const
+std::vector< std::string > OutputFactory::getAvailableFrameOutputNames() const
 {
 	std::vector< std::string > outputs;
 	for( Impl::FrameOutputMap::const_iterator it = this->pImpl->frameOutputMap.begin(); it != this->pImpl->frameOutputMap.end(); ++it )
@@ -121,7 +124,7 @@ std::vector< std::string > OutputFactory::getAvailableFrameOutputs() const
 }
 
 
-std::vector< std::string > OutputFactory::getAvailableOutputs() const
+std::vector< std::string > OutputFactory::getAvailableOutputNames() const
 {
 	std::vector< std::string > outputs;
 	for( Impl::PointOutputMap::const_iterator it = this->pImpl->pointOutputMap.begin(); it != this->pImpl->pointOutputMap.end(); ++it )

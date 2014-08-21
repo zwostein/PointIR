@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _OUTPUTFACTORY__INCLUDED_
-#define _OUTPUTFACTORY__INCLUDED_
+#ifndef _CONTROLLERFACTORY__INCLUDED_
+#define _CONTROLLERFACTORY__INCLUDED_
 
 
 #include <memory>
@@ -27,24 +27,20 @@
 
 
 class Processor;
-class APointOutput;
-class AFrameOutput;
+class AController;
 
 
-class OutputFactory
+class ControllerFactory
 {
 public:
-	OutputFactory();
-	~OutputFactory();
+	ControllerFactory();
+	~ControllerFactory();
 
-	APointOutput * newPointOutput( const std::string name ) const;
-	AFrameOutput * newFrameOutput( const std::string name ) const;
+	AController * newController( const std::string name ) const;
 
-	std::vector< std::string > getAvailablePointOutputNames() const;
-	std::vector< std::string > getAvailableFrameOutputNames() const;
-	std::vector< std::string > getAvailableOutputNames() const;
+	std::vector< std::string > getAvailableControllerNames() const;
 
-	const Processor * processor = nullptr;
+	Processor * processor = nullptr;
 
 private:
 	class Impl;

@@ -30,9 +30,11 @@ set( POINTIR_EXECUTABLE_NAME "pointird" )
 set( POINTIR_SOURCES
 	src/lodepng.cpp
 	src/pointird/main.cpp
-	src/pointird/Processor.cpp
 	src/pointird/CaptureFactory.cpp
 	src/pointird/OutputFactory.cpp
+	src/pointird/ControllerFactory.cpp
+	src/pointird/Processor.cpp
+
 	src/pointird/Unprojector/CalibrationDataFile.cpp
 	src/pointird/Unprojector/CalibrationImageFile.cpp
 	src/pointird/PointFilter/OffscreenFilter.cpp
@@ -41,37 +43,44 @@ set( POINTIR_SOURCES
 	src/pointird/PointDetector/PointDetectorCV.cpp
 	src/pointird/Unprojector/AutoUnprojectorCV.cpp
 	src/pointird/PointOutput/DebugPointOutputCV.cpp
-
-	src/pointird/Controller/DBusController.cpp
 )
 
 option( POINTIR_UNIXDOMAINSOCKET "Enable use of Unix Domain Sockets for point output and video stream" ${UNIX} )
 option( POINTIR_UINPUT "Enable uinput API for multitouch device emulation output" ${LINUX} )
 option( POINTIR_V4L2 "Enable Video4Linux2 API for video capture" ${LINUX} )
+option( POINTIR_DBUS "Enable DBus controller" ON )
 
 if( POINTIR_UINPUT )
-	set( POINTIR_SOURCES ${POINTIR_SOURCES}
+	add_definitions( -DPOINTIR_UINPUT )
+	list( APPEND POINTIR_SOURCES
 		src/pointird/PointOutput/PointOutputUinput.cpp
 	)
-	add_definitions( -DPOINTIR_UINPUT )
 endif()
 
 if( POINTIR_UNIXDOMAINSOCKET )
-	set( POINTIR_SOURCES ${POINTIR_SOURCES}
+	add_definitions( -DPOINTIR_UNIXDOMAINSOCKET )
+	list( APPEND POINTIR_SOURCES
 		src/pointird/FrameOutput/UnixDomainSocketFrameOutput.cpp
 		src/pointird/PointOutput/UnixDomainSocketPointOutput.cpp
 	)
-	add_definitions( -DPOINTIR_UNIXDOMAINSOCKET )
 endif()
 
 if( POINTIR_V4L2 )
-	set( POINTIR_SOURCES ${POINTIR_SOURCES}
+	add_definitions( -DPOINTIR_V4L2 )
+	list( APPEND POINTIR_SOURCES
 		src/pointird/Capture/CaptureV4L2.cpp
 	)
-	add_definitions( -DPOINTIR_V4L2 )
 endif()
 
-add_executable( ${POINTIR_EXECUTABLE_NAME} ${POINTIR_SOURCES} )
+if( POINTIR_DBUS )
+	add_definitions( -DPOINTIR_DBUS )
+	list( APPEND POINTIR_SOURCES
+		src/pointird/Controller/DBusController.cpp
+	)
+	find_package( DBus REQUIRED )
+	include_directories( ${DBUS_INCLUDE_DIRS} )
+	list( APPEND POINTIR_LIBRARIES ${DBUS_LIBRARIES} )
+endif()
 
 option( POINTIR_USE_SYSTEM_TCLAP "Use system TCLAP installation" OFF )
 if( NOT POINTIR_USE_SYSTEM_TCLAP )
@@ -79,11 +88,10 @@ if( NOT POINTIR_USE_SYSTEM_TCLAP )
 endif()
 
 find_package( OpenCV REQUIRED )
-target_link_libraries( ${POINTIR_EXECUTABLE_NAME} ${OpenCV_LIBS} )
+list( APPEND POINTIR_LIBRARIES ${OpenCV_LIBS} )
 
-find_package( DBus REQUIRED )
-include_directories( ${DBUS_INCLUDE_DIRS} )
-target_link_libraries( ${POINTIR_EXECUTABLE_NAME} ${DBUS_LIBRARIES} )
+add_executable( ${POINTIR_EXECUTABLE_NAME} ${POINTIR_SOURCES} )
+target_link_libraries( ${POINTIR_EXECUTABLE_NAME} ${POINTIR_LIBRARIES} )
 
 if( WIN32 )
 	target_link_libraries( ${POINTIR_EXECUTABLE_NAME} winmm imm32 version iphlpapi ws2_32 tiff lzma IlmImf z )

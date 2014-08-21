@@ -24,6 +24,7 @@
 class AController
 {
 public:
+	virtual ~AController() {}
 	virtual void dispatch() = 0;
 };
 

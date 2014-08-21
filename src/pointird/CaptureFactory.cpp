@@ -20,7 +20,9 @@
 #include "CaptureFactory.hpp"
 
 #include "Capture/ACapture.hpp"
+
 #include "Capture/CaptureCV.hpp"
+
 #ifdef POINTIR_V4L2
 	#include "Capture/CaptureV4L2.hpp"
 #endif
