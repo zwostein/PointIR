@@ -117,7 +117,11 @@ int main( int argc, char ** argv )
 	////////////////////////////////////////////////////////////////
 	// default daemon settings
 
-#ifdef POINTIR_DBUS
+	captureFactory.fps = 30.0f;
+	captureFactory.width = 320;
+	captureFactory.height = 240;
+
+#ifdef POINTIR_V4L
 	captureName = "v4l2";
 #else
 	captureName = "cv";
@@ -135,6 +139,7 @@ int main( int argc, char ** argv )
 #endif
 
 #ifdef __unix__
+	captureFactory.deviceName = "/dev/video0";
 	calibrationHook.setBeginHook( "/etc/PointIR/calibrationBeginHook" );
 	calibrationHook.setEndHook( "/etc/PointIR/calibrationEndHook" );
 #else

@@ -85,7 +85,7 @@ public:
 	void setPointFilter( APointFilter * pointFilter );
 	APointFilter * getPointFilter() const;
 
-	const PointIR_Frame * getProcessedFrame() const { return this->frame; }
+	const PointIR_Frame * getProcessedFrame() const { return (const PointIR_Frame *)(this->frame); }
 
 private:
 	class Impl;

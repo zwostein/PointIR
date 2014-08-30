@@ -76,7 +76,7 @@ namespace PointIR
 		const uint8_t * getData()   const noexcept { return frame->data; }
 		uint8_t *       getData()         noexcept { return frame->data; }
 
-		operator const PointIR_Frame*() const noexcept { return frame; }
+		explicit operator const PointIR_Frame*() const noexcept { return frame; }
 
 		void resize( WidthType newWidth, HeightType newHeight )
 		{

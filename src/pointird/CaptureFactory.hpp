@@ -21,24 +21,6 @@
 #define _CAPTUREFACTORY__INCLUDED_
 
 
-#ifndef POINTIR_CAPTURE_DEFAULT_DEVICENAME
-	#ifdef __unix__
-		#define POINTIR_CAPTURE_DEFAULT_DEVICENAME "/dev/video0"
-	#else
-		#define POINTIR_CAPTURE_DEFAULT_DEVICENAME ""
-	#endif
-#endif
-#ifndef POINTIR_CAPTURE_DEFAULT_WIDTH
-	#define POINTIR_CAPTURE_DEFAULT_WIDTH       320
-#endif
-#ifndef POINTIR_CAPTURE_DEFAULT_HEIGHT
-	#define POINTIR_CAPTURE_DEFAULT_HEIGHT      240
-#endif
-#ifndef POINTIR_CAPTURE_DEFAULT_FPS
-	#define POINTIR_CAPTURE_DEFAULT_FPS         30.0f
-#endif
-
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -58,10 +40,10 @@ public:
 
 	std::vector< std::string > getAvailableCaptureNames() const;
 
-	std::string deviceName = POINTIR_CAPTURE_DEFAULT_DEVICENAME;
-	unsigned int width     = POINTIR_CAPTURE_DEFAULT_WIDTH;
-	unsigned int height    = POINTIR_CAPTURE_DEFAULT_HEIGHT;
-	float fps              = POINTIR_CAPTURE_DEFAULT_FPS;
+	std::string deviceName;
+	unsigned int width = 320;
+	unsigned int height = 240;
+	float fps = 30.0f;
 
 private:
 	class Impl;

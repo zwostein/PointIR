@@ -25,8 +25,6 @@
 #include "../Unprojector/CalibrationDataFile.hpp"
 #include "../Unprojector/CalibrationImageFile.hpp"
 #include "../PointDetector/PointDetectorCV.hpp"
-//#include "../FrameOutput/UnixDomainSocketFrameOutput.hpp"
-//#include "../PointOutput/UnixDomainSocketPointOutput.hpp"
 
 #include <iostream>
 #include <string>
@@ -38,14 +36,6 @@
 
 #include <dbus/dbus.h>
 
-/*
-template< typename T > struct nameof {};
-#define NAME_CLASS( classtype ) \
-	template<> struct nameof<classtype> { const static std::string value() { return #classtype; } }
-
-NAME_CLASS( UnixDomainSocketPointOutput );
-NAME_CLASS( UnixDomainSocketFrameOutput );
-*/
 
 #define DBUS_ERROR( connection, message, errorName, text ) \
 	dbusError( connection, message, errorName, text, std::string(__PRETTY_FUNCTION__) )
