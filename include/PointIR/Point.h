@@ -21,11 +21,131 @@
 #define _POINTIR_POINT__INCLUDED_
 
 
-typedef struct
+#if __cplusplus
+	#include <cmath>
+#endif
+
+
+typedef float PointIR_Point_Component;
+
+
+struct PointIR_Point
 {
-	float x;
-	float y;
-} PointIR_Point;
+	PointIR_Point_Component x;
+	PointIR_Point_Component y;
+
+#if __cplusplus
+	typedef PointIR_Point_Component Component;
+
+	/// Initializes all components to their default value.
+	inline PointIR_Point() : x(0), y(0) {}
+
+	/// Initializes all components to the given values.
+	template<class U> inline PointIR_Point( U _x, U _y ) : x(_x), y(_y) {}
+
+	/// Initializes all components to the values of another point.
+	template<class U> inline PointIR_Point( const PointIR_Point & other ) : x(other.x), y(other.y) {}
+
+	/// Assign the coordinates from another point to this one.
+	inline PointIR_Point & operator=( const PointIR_Point & rhs )
+	{
+		x = rhs.x;
+		y = rhs.y;
+		return *this;
+	}
+
+	/// Negates each component.
+	inline PointIR_Point operator-() const
+	{
+		return PointIR_Point(-x,-y);
+	}
+
+	/// Component addition.
+	inline const PointIR_Point operator+( const PointIR_Point & rhs ) const
+	{
+		return PointIR_Point( x+rhs.x, y+rhs.y );
+	}
+
+	/// Calculates difference between two points.
+	inline const PointIR_Point operator-( const PointIR_Point & rhs ) const
+	{
+		return PointIR_Point( x-rhs.x, y-rhs.y );
+	}
+
+	/// Scalar multiplication.
+	inline const PointIR_Point operator*( const Component & rhs ) const
+	{
+		return PointIR_Point( x*rhs, y*rhs );
+	}
+
+	/// Scalar division.
+	inline const PointIR_Point operator/( const Component & rhs ) const
+	{
+		return PointIR_Point( x/rhs, y/rhs );
+	}
+
+	/// Add another point's components.
+	inline PointIR_Point & operator+=(const PointIR_Point & rhs )
+	{
+		x += rhs.x;
+		y += rhs.y;
+		return *this;
+	}
+
+	/// Subtract another point's components.
+	inline PointIR_Point & operator-=( const PointIR_Point & rhs )
+	{
+		x -= rhs.x;
+		y -= rhs.y;
+		return *this;
+	}
+
+	/// Multiply by scalar.
+	inline PointIR_Point & operator*=( const Component & rhs )
+	{
+		x *= rhs;
+		y *= rhs;
+		return *this;
+	}
+
+	/// Divide by scalar.
+	inline PointIR_Point & operator/=( const Component & rhs )
+	{
+		x /= rhs;
+		y /= rhs;
+		return *this;
+	}
+
+	/// The distance to another point
+	inline PointIR_Point_Component distance( const PointIR_Point & other ) const
+	{
+		PointIR_Point d = other - *this;
+		return std::sqrt( d.x * d.x + d.y * d.y );
+	}
+
+	/// The squared distance to another point (faster than distance)
+	inline PointIR_Point_Component squaredDistance( const PointIR_Point & other ) const
+	{
+		PointIR_Point d = other - *this;
+		return d.x * d.x + d.y * d.y;
+	}
+
+	explicit inline operator bool() const
+	{
+		return x || y;
+	}
+#endif
+};
+
+typedef struct PointIR_Point PointIR_Point;
+
+
+#if __cplusplus
+namespace PointIR
+{
+	typedef PointIR_Point Point;
+}
+#endif
 
 
 #endif

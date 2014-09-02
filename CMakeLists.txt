@@ -49,6 +49,9 @@ option( POINTIR_UNIXDOMAINSOCKET "Enable use of Unix Domain Sockets for point ou
 option( POINTIR_UINPUT "Enable uinput API for multitouch device emulation output" ${LINUX} )
 option( POINTIR_V4L2 "Enable Video4Linux2 API for video capture" ${LINUX} )
 option( POINTIR_DBUS "Enable DBus controller" ON )
+option( POINTIR_TUIO "Enable TUIO output module" ON )
+
+set( POINTIR_NEED_TRACKER OFF )
 
 if( POINTIR_UINPUT )
 	add_definitions( -DPOINTIR_UINPUT )
@@ -82,6 +85,24 @@ if( POINTIR_DBUS )
 	list( APPEND POINTIR_LIBRARIES ${DBUS_LIBRARIES} )
 endif()
 
+if( POINTIR_TUIO )
+	add_definitions( -DPOINTIR_TUIO )
+	list( APPEND POINTIR_SOURCES
+		src/pointird/PointOutput/TUIOPointOutput.cpp
+	)
+	find_package( liblo REQUIRED )
+	include_directories( ${LIBLO_INCLUDE_DIRS} )
+	add_definitions( ${LIBLO_DEFINITIONS} )
+	list( APPEND POINTIR_LIBRARIES ${LIBLO_LIBRARIES} )
+	set( POINTIR_NEED_TRACKER ON )
+endif()
+
+if( POINTIR_NEED_TRACKER )
+	list( APPEND POINTIR_SOURCES
+		src/pointird/Tracker.cpp
+	)
+endif()
+
 option( POINTIR_USE_SYSTEM_TCLAP "Use system TCLAP installation" OFF )
 if( NOT POINTIR_USE_SYSTEM_TCLAP )
 	include_directories( "${CMAKE_SOURCE_DIR}/external/tclap/include" )
@@ -90,9 +111,13 @@ endif()
 find_package( OpenCV REQUIRED )
 list( APPEND POINTIR_LIBRARIES ${OpenCV_LIBS} )
 
+find_package( Threads REQUIRED )
+list( APPEND POINTIR_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} )
+
 add_executable( ${POINTIR_EXECUTABLE_NAME} ${POINTIR_SOURCES} )
 target_link_libraries( ${POINTIR_EXECUTABLE_NAME} ${POINTIR_LIBRARIES} )
 
+# HACK:
 if( WIN32 )
 	target_link_libraries( ${POINTIR_EXECUTABLE_NAME} winmm imm32 version iphlpapi ws2_32 tiff lzma IlmImf z )
 endif()
@@ -125,6 +150,7 @@ if( POINTIR_BUILD_EXAMPLES )
 	set( POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2 "pointir_example_SDL2" )
 	add_executable( ${POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2} src/example/SDL2.cpp )
 	target_link_libraries( ${POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2} ${SDL2_LIBRARY} )
+	# HACK:
 	if( WIN32 )
 		target_link_libraries( ${POINTIR_EXECUTABLE_NAME_EXAMPLE_SDL2} winmm dxguid imm32 version iphlpapi ws2_32 )
 	endif()
@@ -134,6 +160,7 @@ if( POINTIR_BUILD_TOOLS )
 	set( POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR "pointir_calibrate_SDL2" )
 	add_executable( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} src/tool/SDL2Calibrator.cpp src/lodepng.cpp )
 	target_link_libraries( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} ${SDL2_LIBRARY} ${DBUS_LIBRARIES} )
+	# HACK:
 	if( WIN32 )
 		target_link_libraries( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} winmm dxguid imm32 version iphlpapi ws2_32 )
 	endif()

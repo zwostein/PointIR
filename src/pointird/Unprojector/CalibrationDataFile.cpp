@@ -26,7 +26,7 @@
 
 
 // the default directory
-std::string CalibrationDataFile::directory = "/tmp/";
+std::string CalibrationDataFile::directory;
 
 
 static std::string getCalibrationDataFileName( const AUnprojector & unprojector )

@@ -42,6 +42,7 @@
 
 #include "Unprojector/AutoUnprojectorCV.hpp"
 #include "Unprojector/CalibrationDataFile.hpp"
+#include "Unprojector/CalibrationImageFile.hpp"
 
 #include "PointFilter/OffscreenFilter.hpp"
 #include "PointFilter/PointFilterChain.hpp"
@@ -52,7 +53,7 @@
 static const char * notice =
 "PointIR Daemon (compiled " __TIME__ ", " __DATE__ ")\n"
 "This program processes a video stream to detect bright spots that are interpreted as \"touches\" for an emulated absolute pointing device (Touchscreen).\n"
-"Copyright © 2014 Tobias Himmer <provisorisch@online.de>";
+"Copyright 2014 Tobias Himmer <provisorisch@online.de>";
 
 
 static volatile bool running = true;
@@ -121,7 +122,7 @@ int main( int argc, char ** argv )
 	captureFactory.width = 320;
 	captureFactory.height = 240;
 
-#ifdef POINTIR_V4L
+#ifdef POINTIR_V4L2
 	captureName = "v4l2";
 #else
 	captureName = "cv";
@@ -133,6 +134,9 @@ int main( int argc, char ** argv )
 #ifdef POINTIR_UNIXDOMAINSOCKET
 	outputNames.push_back( "socket" );
 #endif
+#ifdef POINTIR_TUIO
+	outputNames.push_back( "tuio" );
+#endif
 
 #ifdef POINTIR_DBUS
 	controllerNames.push_back( "dbus" );
@@ -142,9 +146,13 @@ int main( int argc, char ** argv )
 	captureFactory.deviceName = "/dev/video0";
 	calibrationHook.setBeginHook( "/etc/PointIR/calibrationBeginHook" );
 	calibrationHook.setEndHook( "/etc/PointIR/calibrationEndHook" );
+	CalibrationDataFile::setDirectory( "/tmp/" );
+	CalibrationImageFile::setDirectory( "/tmp/");
 #else
 	calibrationHook.setBeginHook( "pointir_calibrationBeginHook" );
 	calibrationHook.setEndHook( "pointir_calibrationEndHook" );
+	CalibrationDataFile::setDirectory( "" );
+	CalibrationImageFile::setDirectory( "" );
 #endif
 
 	////////////////////////////////////////////////////////////////

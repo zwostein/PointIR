@@ -17,22 +17,26 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _POINTOUTPUTUINPUT__INCLUDED_
-#define _POINTOUTPUTUINPUT__INCLUDED_
+#ifndef _TRACKER__INCLUDED_
+#define _TRACKER__INCLUDED_
 
 
-#include "APointOutput.hpp"
+#include <PointIR/PointArray.h>
 
 #include <memory>
+#include <vector>
 
 
-class PointOutputUinput : public APointOutput
+class Tracker
 {
 public:
-	PointOutputUinput();
-	virtual ~PointOutputUinput();
+	Tracker( const Tracker & ) = delete; // disable copy constructor
 
-	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
+	Tracker();
+	~Tracker();
+
+	std::vector< int > & assignIDs( const PointIR::PointArray & lastPoints, const std::vector<int> & lastIDs,
+	                                const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs );
 
 private:
 	class Impl;

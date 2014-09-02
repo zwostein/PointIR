@@ -47,6 +47,7 @@ typedef struct
 #include <stdlib.h>
 #include <new>
 #include <cstddef>
+#include <cstring>
 
 namespace PointIR
 {
@@ -54,8 +55,6 @@ namespace PointIR
 	{
 	public:
 		typedef decltype(PointIR_PointArray::count) CountType;
-
-		PointArray( const PointArray & ) = delete; // disable copy constructor
 
 		PointArray()
 		{
@@ -70,9 +69,18 @@ namespace PointIR
 			free( pointArray );
 		}
 
-		CountType             getCount()  const noexcept { return pointArray->count; }
-		const PointIR_Point * getPoints() const noexcept { return pointArray->points; }
-		PointIR_Point *       getPoints()       noexcept { return pointArray->points; }
+		PointArray( const PointArray & ) = delete; // disable copy constructor
+
+		PointArray & operator=( const PointArray & other )
+		{
+			this->resize( other.size() );
+			memcpy( this->pointArray, other.pointArray, sizeInBytes( other.size() ) );
+			return *this;
+		}
+
+		CountType     getCount()  const noexcept { return pointArray->count; }
+		const Point * getPoints() const noexcept { return pointArray->points; }
+		Point *       getPoints()       noexcept { return pointArray->points; }
 
 		explicit operator const PointIR_PointArray*() const noexcept { return pointArray; }
 
@@ -87,8 +95,8 @@ namespace PointIR
 		////////////////////////////////////////////////////////////////
 		// STL compatibility
 
-		typedef PointIR_Point &                     reference;
-		typedef PointIR_Point                       value_type;
+		typedef Point &                             reference;
+		typedef Point                               value_type;
 		typedef const value_type &                  const_reference;
 		typedef value_type *                        pointer;
 		typedef const value_type *                  const_pointer;
@@ -179,9 +187,11 @@ namespace PointIR
 
 
 	private:
+		static size_t sizeInBytes( CountType size ) { return sizeof(PointIR_PointArray) + size * sizeof(PointIR_Point); }
+
 		void _resize( CountType newCapacity )
 		{
-			pointArray = (PointIR_PointArray*) realloc( pointArray, sizeof(PointIR_PointArray) + newCapacity * sizeof(PointIR_Point) );
+			pointArray = (PointIR_PointArray*) realloc( pointArray, sizeInBytes( newCapacity ) );
 			if( !pointArray )
 				throw std::bad_alloc();
 			pointArrayCapacity = newCapacity;

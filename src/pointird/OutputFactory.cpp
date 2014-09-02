@@ -35,6 +35,10 @@
 	#include "FrameOutput/UnixDomainSocketFrameOutput.hpp"
 #endif
 
+#ifdef POINTIR_TUIO
+	#include "PointOutput/TUIOPointOutput.hpp"
+#endif
+
 #include <map>
 #include <functional>
 
@@ -62,6 +66,11 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 #ifdef POINTIR_UNIXDOMAINSOCKET
 	this->pImpl->pointOutputMap.insert( { "socket", [] ()
 		{ return new UnixDomainSocketPointOutput; }
+	} );
+#endif
+#ifdef POINTIR_TUIO
+	this->pImpl->pointOutputMap.insert( { "tuio", [] ()
+		{ return new TUIOPointOutput; }
 	} );
 #endif
 	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *

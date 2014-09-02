@@ -33,7 +33,7 @@
 
 
 // the default directory
-std::string CalibrationImageFile::directory = "/tmp/";
+std::string CalibrationImageFile::directory;
 
 
 static bool fileExists( const std::string & name )

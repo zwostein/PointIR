@@ -72,7 +72,7 @@ void CaptureCV::start()
 		this->pImpl->videoCapture = nullptr;
 		std::string str;
 		if( this->pImpl->fileName.empty() )
-			str = this->pImpl->deviceNr;
+			str = std::to_string( this->pImpl->deviceNr );
 		else
 			str = this->pImpl->fileName;
 		std::cerr << "CaptureCV: Could not open \"" << str << "\"\n";

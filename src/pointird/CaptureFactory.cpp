@@ -51,11 +51,16 @@ CaptureFactory::CaptureFactory() : pImpl( new Impl )
 #endif
 	this->pImpl->captureMap.insert( { "cv", [this] ()
 		{
+			int devNum = -1;
 			try {
-				return new CaptureCV( std::stoul(this->deviceName), this->width, this->height, this->fps );
+				devNum = std::stoul(this->deviceName);
 			} catch( ... ) {
-				return new CaptureCV( this->deviceName, this->width, this->height, this->fps );
+				devNum = -1;
 			}
+			if( devNum < 0 )
+				return new CaptureCV( this->deviceName, this->width, this->height, this->fps );
+			else
+				return new CaptureCV( devNum, this->width, this->height, this->fps );
 		}
 	} );
 }

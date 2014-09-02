@@ -48,6 +48,7 @@ typedef struct
 #include <new>
 #include <type_traits>
 #include <cstddef>
+#include <cstring>
 
 namespace PointIR
 {
@@ -56,8 +57,6 @@ namespace PointIR
 	public:
 		typedef decltype(PointIR_Frame::width) WidthType;
 		typedef decltype(PointIR_Frame::height) HeightType;
-
-		Frame( const Frame & ) = delete; // disable copy constructor
 
 		Frame()
 		{
@@ -71,6 +70,15 @@ namespace PointIR
 			free( frame );
 		}
 
+		Frame( const Frame & ) = delete; // disable copy constructor
+
+		Frame & operator=( const Frame & other )
+		{
+			this->resize( other.getWidth(), other.getHeight() );
+			memcpy( this->frame, other.frame, sizeInBytes( other.getWidth(), other.getHeight() ) );
+			return *this;
+		}
+
 		WidthType       getWidth()  const noexcept { return frame->width; }
 		HeightType      getHeight() const noexcept { return frame->height; }
 		const uint8_t * getData()   const noexcept { return frame->data; }
@@ -82,7 +90,7 @@ namespace PointIR
 		{
 			if( (newWidth != frame->width) || (newHeight != frame->height) )
 			{
-				frame = (PointIR_Frame*) realloc( frame, sizeof(PointIR_Frame) + newWidth * newHeight );
+				frame = (PointIR_Frame*) realloc( frame, sizeInBytes( newWidth, newHeight ) );
 				if( !frame )
 					throw std::bad_alloc();
 				frame->width = newWidth;
@@ -175,6 +183,8 @@ namespace PointIR
 		////////////////////////////////////////////////////////////////
 
 	private:
+		static size_t sizeInBytes( WidthType newWidth, HeightType newHeight ) { return sizeof(PointIR_Frame) + newWidth * newHeight; }
+
 		PointIR_Frame * frame;
 	};
 }
