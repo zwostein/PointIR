@@ -24,19 +24,19 @@
 #include "FrameOutput/AFrameOutput.hpp"
 #include "PointOutput/APointOutput.hpp"
 
-#include "PointOutput/DebugPointOutputCV.hpp"
+#include "PointOutput/DebugOpenCV.hpp"
 
 #ifdef POINTIR_UINPUT
-	#include "PointOutput/PointOutputUinput.hpp"
+	#include "PointOutput/Uinput.hpp"
 #endif
 
 #ifdef POINTIR_UNIXDOMAINSOCKET
-	#include "PointOutput/UnixDomainSocketPointOutput.hpp"
-	#include "FrameOutput/UnixDomainSocketFrameOutput.hpp"
+	#include "PointOutput/UnixDomainSocket.hpp"
+	#include "FrameOutput/UnixDomainSocket.hpp"
 #endif
 
 #ifdef POINTIR_TUIO
-	#include "PointOutput/TUIOPointOutput.hpp"
+	#include "PointOutput/TUIO.hpp"
 #endif
 
 #include <map>
@@ -60,23 +60,23 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 {
 #ifdef POINTIR_UINPUT
 	this->pImpl->pointOutputMap.insert( { "uinput", [] ()
-		{ return new PointOutputUinput; }
+		{ return new PointOutput::Uinput; }
 	} );
 #endif
 #ifdef POINTIR_UNIXDOMAINSOCKET
 	this->pImpl->pointOutputMap.insert( { "socket", [] ()
-		{ return new UnixDomainSocketPointOutput; }
+		{ return new PointOutput::UnixDomainSocket; }
 	} );
 #endif
 #ifdef POINTIR_TUIO
 	this->pImpl->pointOutputMap.insert( { "tuio", [] ()
-		{ return new TUIOPointOutput; }
+		{ return new PointOutput::TUIO; }
 	} );
 #endif
 	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *
 		{
 			if( this->processor )
-				return new DebugPointOutputCV( *(this->processor) );
+				return new PointOutput::DebugOpenCV( *(this->processor) );
 			else
 				return nullptr;
 		}
@@ -84,7 +84,7 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 
 #ifdef POINTIR_UNIXDOMAINSOCKET
 	this->pImpl->frameOutputMap.insert( { "socket", [] ()
-		{ return new UnixDomainSocketFrameOutput; }
+		{ return new FrameOutput::UnixDomainSocket; }
 	} );
 #endif
 }

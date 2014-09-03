@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DEBUGPOINTOUTPUTCV__INCLUDED_
-#define _DEBUGPOINTOUTPUTCV__INCLUDED_
+#ifndef _POINTOUTPUT_DEBUGOPENCV__INCLUDED_
+#define _POINTOUTPUT_DEBUGOPENCV__INCLUDED_
 
 
 #include "APointOutput.hpp"
@@ -26,15 +26,26 @@
 
 class Processor;
 
-class DebugPointOutputCV : public APointOutput
+
+namespace PointOutput
+{
+
+class DebugOpenCV : public APointOutput
 {
 public:
-	DebugPointOutputCV( const Processor & processor );
-	virtual ~DebugPointOutputCV();
+	DebugOpenCV( const DebugOpenCV & ) = delete; // disable copy constructor
+	DebugOpenCV & operator=( const DebugOpenCV & other ) = delete; // disable assignment operator
+
+	DebugOpenCV( const Processor & processor );
+	virtual ~DebugOpenCV();
+
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
+
 private:
 	const Processor & processor;
 };
+
+}
 
 
 #endif

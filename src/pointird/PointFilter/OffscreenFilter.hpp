@@ -17,14 +17,17 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _OFFSCREENFILTER__INCLUDED_
-#define _OFFSCREENFILTER__INCLUDED_
+#ifndef _POINTFILTER_OFFSCREENFILTER__INCLUDED_
+#define _POINTFILTER_OFFSCREENFILTER__INCLUDED_
 
 
 #include "APointFilter.hpp"
 
 #include <vector>
 
+
+namespace PointFilter
+{
 
 class OffscreenFilter : public APointFilter
 {
@@ -37,6 +40,8 @@ public:
 private:
 	float tolerance = 0.1f;
 };
+
+}
 
 
 #endif

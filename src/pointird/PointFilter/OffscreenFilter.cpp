@@ -22,6 +22,9 @@
 #include <PointIR/PointArray.h>
 
 
+using namespace PointFilter;
+
+
 template< typename T >
 static void erase_unordered( T & v, size_t index )
 {

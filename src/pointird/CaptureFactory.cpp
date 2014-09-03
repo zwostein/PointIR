@@ -21,10 +21,10 @@
 
 #include "Capture/ACapture.hpp"
 
-#include "Capture/CaptureCV.hpp"
+#include "Capture/OpenCV.hpp"
 
 #ifdef POINTIR_V4L2
-	#include "Capture/CaptureV4L2.hpp"
+	#include "Capture/Video4Linux2.hpp"
 #endif
 
 #include <string>
@@ -46,7 +46,7 @@ CaptureFactory::CaptureFactory() : pImpl( new Impl )
 {
 #ifdef POINTIR_V4L2
 	this->pImpl->captureMap.insert( { "v4l2", [this] ()
-		{ return new CaptureV4L2( this->deviceName, this->width, this->height, this->fps ); }
+		{ return new Capture::Video4Linux2( this->deviceName, this->width, this->height, this->fps ); }
 	} );
 #endif
 	this->pImpl->captureMap.insert( { "cv", [this] ()
@@ -58,9 +58,9 @@ CaptureFactory::CaptureFactory() : pImpl( new Impl )
 				devNum = -1;
 			}
 			if( devNum < 0 )
-				return new CaptureCV( this->deviceName, this->width, this->height, this->fps );
+				return new Capture::OpenCV( this->deviceName, this->width, this->height, this->fps );
 			else
-				return new CaptureCV( devNum, this->width, this->height, this->fps );
+				return new Capture::OpenCV( devNum, this->width, this->height, this->fps );
 		}
 	} );
 }

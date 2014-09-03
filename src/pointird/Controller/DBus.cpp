@@ -17,14 +17,14 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "DBusController.hpp"
+#include "DBus.hpp"
 #include "../exceptions.hpp"
 
 #include "../Processor.hpp"
 #include "../Unprojector/AAutoUnprojector.hpp"
 #include "../Unprojector/CalibrationDataFile.hpp"
 #include "../Unprojector/CalibrationImageFile.hpp"
-#include "../PointDetector/PointDetectorCV.hpp"
+#include "../PointDetector/OpenCV.hpp"
 
 #include <iostream>
 #include <string>
@@ -37,8 +37,14 @@
 #include <dbus/dbus.h>
 
 
+using namespace Controller;
+
+
 #define DBUS_ERROR( connection, message, errorName, text ) \
 	dbusError( connection, message, errorName, text, std::string(__PRETTY_FUNCTION__) )
+
+
+static const char * dBusName = "PointIR.Controller";
 
 
 static void dbusError( DBusConnection * connection, DBusMessage * message, const char * errorName, const std::string & text, const std::string & where )
@@ -50,10 +56,19 @@ static void dbusError( DBusConnection * connection, DBusMessage * message, const
 }
 
 
-static const char * dBusName = "PointIR.Controller";
+template< typename TType > struct DBusType  { constexpr static const int type = DBUS_TYPE_INVALID; };
+template<> struct DBusType< unsigned char > { constexpr static const int type = DBUS_TYPE_BYTE; };
+template<> struct DBusType< bool >          { constexpr static const int type = DBUS_TYPE_BOOLEAN; };
+template<> struct DBusType< int16_t >       { constexpr static const int type = DBUS_TYPE_INT16; };
+template<> struct DBusType< uint16_t >      { constexpr static const int type = DBUS_TYPE_UINT16; };
+template<> struct DBusType< int32_t >       { constexpr static const int type = DBUS_TYPE_INT32; };
+template<> struct DBusType< uint32_t >      { constexpr static const int type = DBUS_TYPE_UINT32; };
+template<> struct DBusType< int64_t >       { constexpr static const int type = DBUS_TYPE_INT64; };
+template<> struct DBusType< uint64_t >      { constexpr static const int type = DBUS_TYPE_UINT64; };
+template<> struct DBusType< double >        { constexpr static const int type = DBUS_TYPE_DOUBLE; };
 
 
-class DBusController::Impl
+class DBus::Impl
 {
 public:
 	template< typename T > using Setter = std::function< void( T ) >;
@@ -93,13 +108,13 @@ public:
 		this->interfaceMap.insert( { "PointIR.Controller.Unprojector", unprojectorMethods } );
 
 		MethodMap pointDetectorMethods;
-		if( PointDetectorCV * pointDetector = dynamic_cast<PointDetectorCV*>( &(processor.getPointDetector()) ) )
+		if( PointDetector::OpenCV * pointDetector = dynamic_cast<PointDetector::OpenCV*>( &(processor.getPointDetector()) ) )
 		{
 			pointDetectorMethods.insert( { "setIntensityThreshold", std::bind( &Impl::set< unsigned char >, this,
-				Setter< unsigned char >( std::bind( &PointDetectorCV::setIntensityThreshold, pointDetector, _1 ) ),
+				Setter< unsigned char >( std::bind( &PointDetector::OpenCV::setIntensityThreshold, pointDetector, _1 ) ),
 				_1, _2 ) } );
 			pointDetectorMethods.insert( { "getIntensityThreshold", std::bind( &Impl::get< unsigned char >, this,
-				Getter< unsigned char >( std::bind( &PointDetectorCV::getIntensityThreshold, pointDetector ) ),
+				Getter< unsigned char >( std::bind( &PointDetector::OpenCV::getIntensityThreshold, pointDetector ) ),
 				_1, _2 ) } );
 		}
 		this->interfaceMap.insert( { "PointIR.Controller.PointDetector", pointDetectorMethods } );
@@ -260,9 +275,6 @@ public:
 	}
 
 
-	template< typename TType > struct DBusType { constexpr static const int type = DBUS_TYPE_INVALID; };
-
-
 	template< typename TType >
 	void set( Setter< TType > setter, DBusConnection * connection, DBusMessage * message )
 	{
@@ -323,18 +335,7 @@ public:
 };
 
 
-template<> struct DBusController::Impl::DBusType< unsigned char > { constexpr static const int type = DBUS_TYPE_BYTE; };
-template<> struct DBusController::Impl::DBusType< bool >          { constexpr static const int type = DBUS_TYPE_BOOLEAN; };
-template<> struct DBusController::Impl::DBusType< int16_t >       { constexpr static const int type = DBUS_TYPE_INT16; };
-template<> struct DBusController::Impl::DBusType< uint16_t >      { constexpr static const int type = DBUS_TYPE_UINT16; };
-template<> struct DBusController::Impl::DBusType< int32_t >       { constexpr static const int type = DBUS_TYPE_INT32; };
-template<> struct DBusController::Impl::DBusType< uint32_t >      { constexpr static const int type = DBUS_TYPE_UINT32; };
-template<> struct DBusController::Impl::DBusType< int64_t >       { constexpr static const int type = DBUS_TYPE_INT64; };
-template<> struct DBusController::Impl::DBusType< uint64_t >      { constexpr static const int type = DBUS_TYPE_UINT64; };
-template<> struct DBusController::Impl::DBusType< double >        { constexpr static const int type = DBUS_TYPE_DOUBLE; };
-
-
-DBusController::DBusController( Processor & processor )
+DBus::DBus( Processor & processor )
 	: pImpl( new Impl(processor) )
 {
 	dbus_error_init( &(this->pImpl->error) );
@@ -368,7 +369,7 @@ DBusController::DBusController( Processor & processor )
 }
 
 
-DBusController::~DBusController()
+DBus::~DBus()
 {
 	if( this->pImpl->connection )
 		dbus_connection_unref( this->pImpl->connection );
@@ -376,7 +377,7 @@ DBusController::~DBusController()
 }
 
 
-void DBusController::dispatch()
+void DBus::dispatch()
 {
 	while( true )
 	{

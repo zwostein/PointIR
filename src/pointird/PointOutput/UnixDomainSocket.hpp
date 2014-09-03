@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _UNIXDOMAINSOCKETPOINTOUTPUT__INCLUDED_
-#define _UNIXDOMAINSOCKETPOINTOUTPUT__INCLUDED_
+#ifndef _POINTOUTPUT_UNIXDOMAINSOCKET__INCLUDED_
+#define _POINTOUTPUT_UNIXDOMAINSOCKET__INCLUDED_
 
 
 #include "APointOutput.hpp"
@@ -27,18 +27,24 @@
 #include <memory>
 
 
-class UnixDomainSocketPointOutput : public APointOutput
+namespace PointOutput
+{
+
+class UnixDomainSocket : public APointOutput
 {
 public:
-	UnixDomainSocketPointOutput();
-	virtual ~UnixDomainSocketPointOutput();
+	UnixDomainSocket( const UnixDomainSocket & ) = delete; // disable copy constructor
+	UnixDomainSocket & operator=( const UnixDomainSocket & other ) = delete; // disable assignment operator
+
+	UnixDomainSocket();
+	virtual ~UnixDomainSocket();
 
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 
 	const std::string & getSocketPath() const { return this->socketPath; }
 
 	static void setDirectory( const std::string & directory );
-	static const std::string & getDirectory() { return UnixDomainSocketPointOutput::directory; }
+	static const std::string & getDirectory() { return UnixDomainSocket::directory; }
 
 private:
 	static std::string directory;
@@ -49,5 +55,6 @@ private:
 	std::unique_ptr< Impl > pImpl;
 };
 
+}
 
 #endif

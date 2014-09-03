@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CAPTUREV4L2__INCLUDED_
-#define _CAPTUREV4L2__INCLUDED_
+#ifndef _CAPTURE_V4L2__INCLUDED_
+#define _CAPTURE_V4L2__INCLUDED_
 
 
 #include "ACapture.hpp"
@@ -27,13 +27,17 @@
 #include <string>
 
 
-class CaptureV4L2 : public ACapture
+namespace Capture
+{
+
+class Video4Linux2 : public ACapture
 {
 public:
-	CaptureV4L2( const CaptureV4L2 & ) = delete; // disable copy constructor
+	Video4Linux2( const Video4Linux2 & ) = delete; // disable copy constructor
+	Video4Linux2 & operator=( const Video4Linux2 & other ) = delete; // disable assignment operator
 
-	CaptureV4L2( const std::string & device, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
-	virtual ~CaptureV4L2();
+	Video4Linux2( const std::string & device, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
+	virtual ~Video4Linux2();
 
 	virtual void start() override;
 	virtual bool advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) override;
@@ -60,6 +64,8 @@ private:
 	float fps;
 	bool capturing = false;
 };
+
+}
 
 
 #endif

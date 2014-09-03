@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _POINTDETECTORCV__INCLUDED_
-#define _POINTDETECTORCV__INCLUDED_
+#ifndef _POINTDETECTOR_OPENCV__INCLUDED_
+#define _POINTDETECTOR_OPENCV__INCLUDED_
 
 
 #include "APointDetector.hpp"
@@ -28,7 +28,10 @@
 #include <stdint.h>
 
 
-class PointDetectorCV : public APointDetector
+namespace PointDetector
+{
+
+class OpenCV : public APointDetector
 {
 public:
 	virtual void detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame ) override;
@@ -49,6 +52,8 @@ private:
 	float minBoundingSize = 0.0002f;
 	float maxBoundingSize = 0.125f;
 };
+
+}
 
 
 #endif

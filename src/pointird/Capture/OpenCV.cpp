@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CaptureCV.hpp"
+#include "OpenCV.hpp"
 #include "../exceptions.hpp"
 
 #include <PointIR/Frame.h>
@@ -28,7 +28,10 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 
-class CaptureCV::Impl
+using namespace Capture;
+
+
+class OpenCV::Impl
 {
 public:
 	std::string fileName;
@@ -37,27 +40,27 @@ public:
 };
 
 
-CaptureCV::CaptureCV( int deviceNr, unsigned int width, unsigned int height, float fps )
+OpenCV::OpenCV( int deviceNr, unsigned int width, unsigned int height, float fps )
 	: pImpl( new Impl ), width(width), height(height), fps(fps)
 {
 	this->pImpl->deviceNr = deviceNr;
 }
 
 
-CaptureCV::CaptureCV( const std::string & fileName, unsigned int width, unsigned int height, float fps )
+OpenCV::OpenCV( const std::string & fileName, unsigned int width, unsigned int height, float fps )
 	: pImpl( new Impl ), width(width), height(height), fps(fps)
 {
 	this->pImpl->fileName = fileName;
 }
 
 
-CaptureCV::~CaptureCV()
+OpenCV::~OpenCV()
 {
 	this->stop();
 }
 
 
-void CaptureCV::start()
+void OpenCV::start()
 {
 	this->stop();
 
@@ -87,7 +90,7 @@ void CaptureCV::start()
 }
 
 
-void CaptureCV::stop()
+void OpenCV::stop()
 {
 	if( this->pImpl->videoCapture )
 	{
@@ -99,7 +102,7 @@ void CaptureCV::stop()
 }
 
 
-bool CaptureCV::advanceFrame( bool block, float timeoutSeconds )
+bool OpenCV::advanceFrame( bool block, float timeoutSeconds )
 {
 	if( !this->pImpl->videoCapture )
 		return false;
@@ -108,7 +111,7 @@ bool CaptureCV::advanceFrame( bool block, float timeoutSeconds )
 }
 
 
-bool CaptureCV::retrieveFrame( PointIR::Frame & frame ) const
+bool OpenCV::retrieveFrame( PointIR::Frame & frame ) const
 {
 	if( !this->pImpl->videoCapture )
 		return false;

@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "DebugPointOutputCV.hpp"
+#include "DebugOpenCV.hpp"
 #include "../Processor.hpp"
 #include "../Unprojector/AUnprojector.hpp"
 
@@ -29,17 +29,20 @@
 #include <iostream>
 
 
-DebugPointOutputCV::DebugPointOutputCV( const Processor & processor ) : processor(processor)
+using namespace PointOutput;
+
+
+DebugOpenCV::DebugOpenCV( const Processor & processor ) : processor(processor)
 {
 }
 
 
-DebugPointOutputCV::~DebugPointOutputCV()
+DebugOpenCV::~DebugOpenCV()
 {
 }
 
 
-void DebugPointOutputCV::outputPoints( const PointIR::PointArray & pointArray )
+void DebugOpenCV::outputPoints( const PointIR::PointArray & pointArray )
 {
 	cv::Mat image;
 	const PointIR_Frame * frame = this->processor.getProcessedFrame();

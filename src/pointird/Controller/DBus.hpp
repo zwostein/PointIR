@@ -17,27 +17,38 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _POINTOUTPUTUINPUT__INCLUDED_
-#define _POINTOUTPUTUINPUT__INCLUDED_
+#ifndef _CONTROLLER_DBUS__INCLUDED_
+#define _CONTROLLER_DBUS__INCLUDED_
 
 
-#include "APointOutput.hpp"
+#include "AController.hpp"
 
 #include <memory>
 
 
-class PointOutputUinput : public APointOutput
+class Processor;
+
+
+namespace Controller
+{
+
+class DBus : public AController
 {
 public:
-	PointOutputUinput();
-	virtual ~PointOutputUinput();
+	DBus( const DBus & ) = delete; // disable copy constructor
+	DBus & operator=( const DBus & other ) = delete; // disable assignment operator
 
-	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
+	DBus( Processor & processor );
+	~DBus();
+
+	virtual void dispatch() override;
 
 private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
 };
+
+}
 
 
 #endif

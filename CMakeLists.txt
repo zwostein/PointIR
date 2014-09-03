@@ -39,10 +39,10 @@ set( POINTIR_SOURCES
 	src/pointird/Unprojector/CalibrationImageFile.cpp
 	src/pointird/PointFilter/OffscreenFilter.cpp
 
-	src/pointird/Capture/CaptureCV.cpp
-	src/pointird/PointDetector/PointDetectorCV.cpp
-	src/pointird/Unprojector/AutoUnprojectorCV.cpp
-	src/pointird/PointOutput/DebugPointOutputCV.cpp
+	src/pointird/Capture/OpenCV.cpp
+	src/pointird/PointDetector/OpenCV.cpp
+	src/pointird/Unprojector/AutoOpenCV.cpp
+	src/pointird/PointOutput/DebugOpenCV.cpp
 )
 
 option( POINTIR_UNIXDOMAINSOCKET "Enable use of Unix Domain Sockets for point output and video stream" ${UNIX} )
@@ -56,29 +56,29 @@ set( POINTIR_NEED_TRACKER OFF )
 if( POINTIR_UINPUT )
 	add_definitions( -DPOINTIR_UINPUT )
 	list( APPEND POINTIR_SOURCES
-		src/pointird/PointOutput/PointOutputUinput.cpp
+		src/pointird/PointOutput/Uinput.cpp
 	)
 endif()
 
 if( POINTIR_UNIXDOMAINSOCKET )
 	add_definitions( -DPOINTIR_UNIXDOMAINSOCKET )
 	list( APPEND POINTIR_SOURCES
-		src/pointird/FrameOutput/UnixDomainSocketFrameOutput.cpp
-		src/pointird/PointOutput/UnixDomainSocketPointOutput.cpp
+		src/pointird/FrameOutput/UnixDomainSocket.cpp
+		src/pointird/PointOutput/UnixDomainSocket.cpp
 	)
 endif()
 
 if( POINTIR_V4L2 )
 	add_definitions( -DPOINTIR_V4L2 )
 	list( APPEND POINTIR_SOURCES
-		src/pointird/Capture/CaptureV4L2.cpp
+		src/pointird/Capture/Video4Linux2.cpp
 	)
 endif()
 
 if( POINTIR_DBUS )
 	add_definitions( -DPOINTIR_DBUS )
 	list( APPEND POINTIR_SOURCES
-		src/pointird/Controller/DBusController.cpp
+		src/pointird/Controller/DBus.cpp
 	)
 	find_package( DBus REQUIRED )
 	include_directories( ${DBUS_INCLUDE_DIRS} )
@@ -88,7 +88,7 @@ endif()
 if( POINTIR_TUIO )
 	add_definitions( -DPOINTIR_TUIO )
 	list( APPEND POINTIR_SOURCES
-		src/pointird/PointOutput/TUIOPointOutput.cpp
+		src/pointird/PointOutput/TUIO.cpp
 	)
 	find_package( liblo REQUIRED )
 	include_directories( ${LIBLO_INCLUDE_DIRS} )

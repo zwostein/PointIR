@@ -18,7 +18,7 @@
  */
 
 
-#include "TUIOPointOutput.hpp"
+#include "TUIO.hpp"
 #include "../exceptions.hpp"
 #include "../Tracker.hpp"
 
@@ -34,7 +34,10 @@
 #include <lo/lo.h>
 
 
-class TUIOPointOutput::Impl
+using namespace PointOutput;
+
+
+class TUIO::Impl
 {
 public:
 	lo_address tuioAddr = nullptr;
@@ -47,7 +50,7 @@ public:
 };
 
 
-TUIOPointOutput::TUIOPointOutput( std::string address ) :
+TUIO::TUIO( std::string address ) :
 	pImpl( new Impl )
 {
 	this->pImpl->tuioAddr = lo_address_new_from_url( address.c_str() );
@@ -57,13 +60,13 @@ TUIOPointOutput::TUIOPointOutput( std::string address ) :
 }
 
 
-TUIOPointOutput::~TUIOPointOutput()
+TUIO::~TUIO()
 {
 	lo_address_free( this->pImpl->tuioAddr );
 }
 
 
-void TUIOPointOutput::outputPoints( const PointIR::PointArray & currentPoints )
+void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 {
 	std::vector< int > & mapToPrevious = this->pImpl->tracker.assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs, currentPoints, this->pImpl->currentIDs );
 

@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "UnixDomainSocketPointOutput.hpp"
+#include "UnixDomainSocket.hpp"
 #include "../exceptions.hpp"
 
 #include <PointIR/PointArray.h>
@@ -40,19 +40,22 @@
 #include <malloc.h>
 
 
+using namespace PointOutput;
+
+
 // the default directory
-std::string UnixDomainSocketPointOutput::directory = "/tmp/";
+std::string UnixDomainSocket::directory = "/tmp/";
 
 
-void UnixDomainSocketPointOutput::setDirectory( const std::string & directory )
+void UnixDomainSocket::setDirectory( const std::string & directory )
 {
-	UnixDomainSocketPointOutput::directory = directory;
-	if( !UnixDomainSocketPointOutput::directory.empty() && UnixDomainSocketPointOutput::directory.back() != '/' )
-		UnixDomainSocketPointOutput::directory += '/';
+	UnixDomainSocket::directory = directory;
+	if( !UnixDomainSocket::directory.empty() && UnixDomainSocket::directory.back() != '/' )
+		UnixDomainSocket::directory += '/';
 }
 
 
-class UnixDomainSocketPointOutput::Impl
+class UnixDomainSocket::Impl
 {
 public:
 	struct Socket
@@ -84,11 +87,11 @@ static void unlinkSocket( const std::string & socketPath )
 }
 
 
-UnixDomainSocketPointOutput::UnixDomainSocketPointOutput() :
+UnixDomainSocket::UnixDomainSocket() :
 	pImpl( new Impl )
 {
 	std::stringstream ss;
-	ss << UnixDomainSocketPointOutput::directory << "PointIR.points.socket";
+	ss << UnixDomainSocket::directory << "PointIR.points.socket";
 	this->socketPath = ss.str();
 
 	// delete existing socket if it exists
@@ -120,7 +123,7 @@ UnixDomainSocketPointOutput::UnixDomainSocketPointOutput() :
 }
 
 
-UnixDomainSocketPointOutput::~UnixDomainSocketPointOutput()
+UnixDomainSocket::~UnixDomainSocket()
 {
 	try
 	{
@@ -137,7 +140,7 @@ UnixDomainSocketPointOutput::~UnixDomainSocketPointOutput()
 }
 
 
-void UnixDomainSocketPointOutput::outputPoints( const PointIR::PointArray & pointArray )
+void UnixDomainSocket::outputPoints( const PointIR::PointArray & pointArray )
 {
 	const PointIR_PointArray * packet = static_cast< const PointIR_PointArray * >( pointArray );
 	size_t packetSize = sizeof(PointIR_PointArray) + packet->count * sizeof(PointIR_Point);

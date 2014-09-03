@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CAPTURECV__INCLUDED_
-#define _CAPTURECV__INCLUDED_
+#ifndef _CAPTURE_OPENCV__INCLUDED_
+#define _CAPTURE_OPENCV__INCLUDED_
 
 
 #include "ACapture.hpp"
@@ -27,14 +27,18 @@
 #include <string>
 
 
-class CaptureCV : public ACapture
+namespace Capture
+{
+
+class OpenCV : public ACapture
 {
 public:
-	CaptureCV( const CaptureCV & ) = delete; // disable copy constructor
+	OpenCV( const OpenCV & ) = delete; // disable copy constructor
+	OpenCV & operator=( const OpenCV & other ) = delete; // disable assignment operator
 
-	CaptureCV( int deviceNr = 0, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
-	CaptureCV( const std::string & fileName, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
-	virtual ~CaptureCV();
+	OpenCV( int deviceNr = 0, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
+	OpenCV( const std::string & fileName, unsigned int width = 320, unsigned int height = 240, float fps = 30 );
+	virtual ~OpenCV();
 
 	virtual void start() override;
 	virtual bool advanceFrame( bool block = true, float timeoutSeconds = -1.0f ) override;
@@ -56,6 +60,8 @@ private:
 	float fps;
 	bool capturing = false;
 };
+
+}
 
 
 #endif

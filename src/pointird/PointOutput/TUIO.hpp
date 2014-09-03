@@ -17,36 +17,35 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _AUTOUNPROJECTORCV__INCLUDED_
-#define _AUTOUNPROJECTORCV__INCLUDED_
+#ifndef _POINTOUTPUT_TUIO__INCLUDED_
+#define _POINTOUTPUT_TUIO__INCLUDED_
 
 
-#include "AAutoUnprojector.hpp"
+#include "APointOutput.hpp"
 
 #include <memory>
 
-#include <stdint.h>
 
+namespace PointOutput
+{
 
-class AutoUnprojectorCV : public AAutoUnprojector
+class TUIO : public APointOutput
 {
 public:
-	AutoUnprojectorCV();
-	~AutoUnprojectorCV();
+	TUIO( const TUIO & ) = delete; // disable copy constructor
+	TUIO & operator=( const TUIO & other ) = delete; // disable assignment operator
 
-	virtual void unproject( uint8_t * greyImage, unsigned int width, unsigned int height ) const override;
-	virtual void unproject( PointIR::PointArray & pointArray ) const override;
+	TUIO( std::string address = "osc.udp://127.0.0.1:3333" );
+	virtual ~TUIO();
 
-	virtual std::vector< uint8_t > getRawCalibrationData() const override;
-	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) override;
-
-	virtual bool calibrate( const PointIR::Frame & frame ) override;
-	virtual void generateCalibrationImage( PointIR::Frame & frame, unsigned int width, unsigned int height ) const override;
+	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 
 private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
 };
+
+}
 
 
 #endif

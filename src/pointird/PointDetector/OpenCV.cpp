@@ -17,10 +17,10 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define _POINTDETECTORCV__LIVEDEBUG_
+//#define _POINTDETECTOR_OPENCV__LIVEDEBUG_
 
 
-#include "PointDetectorCV.hpp"
+#include "OpenCV.hpp"
 
 #include <PointIR/Frame.h>
 #include <PointIR/PointArray.h>
@@ -33,9 +33,12 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 	#include <opencv2/highgui/highgui.hpp>
 #endif
+
+
+using namespace PointDetector;
 
 
 struct BoundingBox
@@ -47,7 +50,7 @@ struct BoundingBox
 };
 
 
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 static cv::Mat imageDebug;
 #endif
 
@@ -68,7 +71,7 @@ static void pointsFromContours( PointIR::PointArray & pointArray, const std::vec
 		}
 		point.x /= contours[i].size();
 		point.y /= contours[i].size();
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 		cv::circle( imageDebug, cv::Point2f( point.x, point.y ), 3.0f, cv::Scalar( 0, 255, 0 ) );
 #endif
 	}
@@ -99,7 +102,7 @@ static void pointsFromContours_BoundFiltered( PointIR::PointArray & pointArray, 
 			if( contourPoint.y < box.minY )
 				box.minY = contourPoint.y;
 		}
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 		cv::circle( imageDebug, cv::Point2f( point.x/contours[i].size(), point.y/contours[i].size() ), 3.0f, cv::Scalar( 0, 64, 0 ) );
 		cv::rectangle( imageDebug, cv::Point2f( box.minX, box.minY ), cv::Point2f( box.maxX, box.maxY ), cv::Scalar( 0, 64, 64 ) );
 #endif
@@ -109,7 +112,7 @@ static void pointsFromContours_BoundFiltered( PointIR::PointArray & pointArray, 
 			continue;
 		point.x /= contours[i].size();
 		point.y /= contours[i].size();
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 		cv::circle( imageDebug, cv::Point2f( point.x, point.y ), 3.0f, cv::Scalar( 0, 255, 0 ) );
 		cv::rectangle( imageDebug, cv::Point2f( box.minX, box.minY ), cv::Point2f( box.maxX, box.maxY ), cv::Scalar( 0, 255, 255 ) );
 #endif
@@ -117,7 +120,7 @@ static void pointsFromContours_BoundFiltered( PointIR::PointArray & pointArray, 
 }
 
 
-void PointDetectorCV::detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame )
+void OpenCV::detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame )
 {
 	// create a thresholded copy of input image that may be modified
 	cv::Mat imageThresholded( cv::Size( frame.getWidth(), frame.getHeight()), CV_8UC1 );
@@ -134,7 +137,7 @@ void PointDetectorCV::detect( PointIR::PointArray & pointArray, const PointIR::F
 
 //	cv::morphologyEx( imageThresholded, imageThresholded, cv::MORPH_OPEN, cv::Mat(), cv::Point(-1,-1), 5 );
 
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 	// need to copy image here for debug view because findContours will modify the thresholded image
 	cv::cvtColor( imageThresholded, imageDebug, CV_GRAY2RGB );
 #endif
@@ -143,7 +146,7 @@ void PointDetectorCV::detect( PointIR::PointArray & pointArray, const PointIR::F
 	std::vector< std::vector<cv::Point> > contours;
 	cv::findContours( imageThresholded, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
 
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
 	cv::drawContours( imageDebug, contours, -1, cv::Scalar( 0, 0, 255 ), 1, 1 );
 #endif
 
@@ -161,8 +164,8 @@ void PointDetectorCV::detect( PointIR::PointArray & pointArray, const PointIR::F
 		pointsFromContours( pointArray, contours );
 	}
 
-#ifdef _POINTDETECTORCV__LIVEDEBUG_
-	cv::imshow( "PointDetectorCV", imageDebug );
+#ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
+	cv::imshow( "PointDetectorOpenCV", imageDebug );
 	cv::waitKey(1); // need this for event processing - window wouldn't be visible
 #endif
 }

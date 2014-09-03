@@ -17,32 +17,44 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DBUSCONTROLLER__INCLUDED_
-#define _DBUSCONTROLLER__INCLUDED_
+#ifndef _FRAMEOUTPUT_UNIXDOMAINSOCKET__INCLUDED_
+#define _FRAMEOUTPUT_UNIXDOMAINSOCKET__INCLUDED_
 
 
-#include "AController.hpp"
+#include "AFrameOutput.hpp"
 
+#include <string>
 #include <memory>
 
 
-class Processor;
+namespace FrameOutput
+{
 
-
-class DBusController : public AController
+class UnixDomainSocket : public AFrameOutput
 {
 public:
-	DBusController( const DBusController & ) = delete; // disable copy constructor
+	UnixDomainSocket( const UnixDomainSocket & ) = delete; // disable copy constructor
+	UnixDomainSocket & operator=( const UnixDomainSocket & other ) = delete; // disable assignment operator
 
-	DBusController( Processor & processor );
-	~DBusController();
+	UnixDomainSocket();
+	virtual ~UnixDomainSocket();
 
-	virtual void dispatch() override;
+	virtual void outputFrame( const PointIR::Frame & frame ) override;
+
+	const std::string & getSocketPath() const { return this->socketPath; }
+
+	static void setDirectory( const std::string & directory );
+	static const std::string & getDirectory() { return UnixDomainSocket::directory; }
 
 private:
+	static std::string directory;
+
+	std::string socketPath;
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
 };
+
+}
 
 
 #endif

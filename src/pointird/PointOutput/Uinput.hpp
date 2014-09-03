@@ -17,8 +17,8 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TUIOPOINTOUTPUT__INCLUDED_
-#define _TUIOPOINTOUTPUT__INCLUDED_
+#ifndef _POINTOUTPUT_UINPUT__INCLUDED_
+#define _POINTOUTPUT_UINPUT__INCLUDED_
 
 
 #include "APointOutput.hpp"
@@ -26,11 +26,17 @@
 #include <memory>
 
 
-class TUIOPointOutput : public APointOutput
+namespace PointOutput
+{
+
+class Uinput : public APointOutput
 {
 public:
-	TUIOPointOutput( std::string address = "osc.udp://127.0.0.1:3333" );
-	virtual ~TUIOPointOutput();
+	Uinput( const Uinput & ) = delete; // disable copy constructor
+	Uinput & operator=( const Uinput & other ) = delete; // disable assignment operator
+
+	Uinput();
+	virtual ~Uinput();
 
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 
@@ -38,6 +44,8 @@ private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
 };
+
+}
 
 
 #endif

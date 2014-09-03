@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "UnixDomainSocketFrameOutput.hpp"
+#include "UnixDomainSocket.hpp"
 #include "../exceptions.hpp"
 
 #include <PointIR/Frame.h>
@@ -40,19 +40,22 @@
 #include <malloc.h>
 
 
+using namespace FrameOutput;
+
+
 // the default directory
-std::string UnixDomainSocketFrameOutput::directory = "/tmp/";
+std::string UnixDomainSocket::directory = "/tmp/";
 
 
-void UnixDomainSocketFrameOutput::setDirectory( const std::string & directory )
+void UnixDomainSocket::setDirectory( const std::string & directory )
 {
-	UnixDomainSocketFrameOutput::directory = directory;
-	if( !UnixDomainSocketFrameOutput::directory.empty() && UnixDomainSocketFrameOutput::directory.back() != '/' )
-		UnixDomainSocketFrameOutput::directory += '/';
+	UnixDomainSocket::directory = directory;
+	if( !UnixDomainSocket::directory.empty() && UnixDomainSocket::directory.back() != '/' )
+		UnixDomainSocket::directory += '/';
 }
 
 
-class UnixDomainSocketFrameOutput::Impl
+class UnixDomainSocket::Impl
 {
 public:
 	struct Socket
@@ -84,11 +87,11 @@ static void unlinkSocket( const std::string & socketPath )
 }
 
 
-UnixDomainSocketFrameOutput::UnixDomainSocketFrameOutput() :
+UnixDomainSocket::UnixDomainSocket() :
 	pImpl( new Impl )
 {
 	std::stringstream ss;
-	ss << UnixDomainSocketFrameOutput::directory << "PointIR.video.socket";
+	ss << UnixDomainSocket::directory << "PointIR.video.socket";
 	this->socketPath = ss.str();
 
 	// delete existing socket if it exists
@@ -120,7 +123,7 @@ UnixDomainSocketFrameOutput::UnixDomainSocketFrameOutput() :
 }
 
 
-UnixDomainSocketFrameOutput::~UnixDomainSocketFrameOutput()
+UnixDomainSocket::~UnixDomainSocket()
 {
 	try
 	{
@@ -137,7 +140,7 @@ UnixDomainSocketFrameOutput::~UnixDomainSocketFrameOutput()
 }
 
 
-void UnixDomainSocketFrameOutput::outputFrame( const PointIR::Frame & frame )
+void UnixDomainSocket::outputFrame( const PointIR::Frame & frame )
 {
 	const PointIR_Frame * packet = static_cast<const PointIR_Frame*>(frame);
 	size_t packetSize = sizeof(PointIR_Frame) + packet->width * packet->height;

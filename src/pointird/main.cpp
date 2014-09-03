@@ -38,9 +38,9 @@
 #include "ControllerFactory.hpp"
 #include "Controller/AController.hpp"
 
-#include "PointDetector/PointDetectorCV.hpp"
+#include "PointDetector/OpenCV.hpp"
 
-#include "Unprojector/AutoUnprojectorCV.hpp"
+#include "Unprojector/AutoOpenCV.hpp"
 #include "Unprojector/CalibrationDataFile.hpp"
 #include "Unprojector/CalibrationImageFile.hpp"
 
@@ -277,15 +277,15 @@ int main( int argc, char ** argv )
 		return 1;
 	}
 
-	PointDetectorCV detector;
+	PointDetector::OpenCV detector;
 	detector.setBoundingFilterEnabled( true );
 
-	AutoUnprojectorCV unprojector;
+	Unprojector::AutoOpenCV unprojector;
 	CalibrationDataFile::load( unprojector );
 
 	PointFilterChain pointFilterChain;
 
-	OffscreenFilter offscreenFilter;
+	PointFilter::OffscreenFilter offscreenFilter;
 	pointFilterChain.appendFilter( &offscreenFilter );
 
 	Processor processor( *capture, detector, unprojector );

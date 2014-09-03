@@ -17,10 +17,10 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define _AUTOUNPROJECTORCV__LIVEDEBUG_
+//#define _UNPROJECTOR_AUTOOPENCV__LIVEDEBUG_
 
 
-#include "AutoUnprojectorCV.hpp"
+#include "AutoOpenCV.hpp"
 
 #include <PointIR/Frame.h>
 #include <PointIR/Point.h>
@@ -32,9 +32,12 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 
-#ifdef _AUTOUNPROJECTORCV__LIVEDEBUG_
+#ifdef _UNPROJECTOR_AUTOOPENCV__LIVEDEBUG_
 	#include <opencv2/highgui/highgui.hpp>
 #endif
+
+
+using namespace Unprojector;
 
 
 static const unsigned int chessboardNumFieldsX = 10;
@@ -44,7 +47,7 @@ static const unsigned int chessboardNumCornersY = chessboardNumFieldsY-1;
 static const float chessboardBorder = 0.01f;
 
 
-class AutoUnprojectorCV::Impl
+class AutoOpenCV::Impl
 {
 public:
 	unsigned int width = 0;
@@ -94,14 +97,14 @@ static void drawChessboard( uint8_t * greyImage, unsigned int imageWidth, unsign
 }
 
 
-AutoUnprojectorCV::AutoUnprojectorCV() : pImpl( new Impl )
+AutoOpenCV::AutoOpenCV() : pImpl( new Impl )
 {
 	this->pImpl->perspective = cv::Mat::eye( 3, 3, CV_64F );
 	this->pImpl->normalizedPerspective = cv::Mat::eye( 3, 3, CV_64F );
 }
 
 
-AutoUnprojectorCV::~AutoUnprojectorCV()
+AutoOpenCV::~AutoOpenCV()
 {
 }
 
@@ -114,7 +117,7 @@ struct Data
 };
 
 
-std::vector< uint8_t > AutoUnprojectorCV::getRawCalibrationData() const
+std::vector< uint8_t > AutoOpenCV::getRawCalibrationData() const
 {
 	std::vector< uint8_t > rawData( sizeof(Data) );
 	Data * data = reinterpret_cast< Data * >( rawData.data() );
@@ -127,7 +130,7 @@ std::vector< uint8_t > AutoUnprojectorCV::getRawCalibrationData() const
 }
 
 
-bool AutoUnprojectorCV::setRawCalibrationData( const std::vector< uint8_t > & rawData )
+bool AutoOpenCV::setRawCalibrationData( const std::vector< uint8_t > & rawData )
 {
 	if( rawData.size() != sizeof(Data) )
 		return false;
@@ -141,7 +144,7 @@ bool AutoUnprojectorCV::setRawCalibrationData( const std::vector< uint8_t > & ra
 }
 
 
-void AutoUnprojectorCV::generateCalibrationImage( PointIR::Frame & frame, unsigned int width, unsigned int height ) const
+void AutoOpenCV::generateCalibrationImage( PointIR::Frame & frame, unsigned int width, unsigned int height ) const
 {
 	frame.resize( width, height );
 	clear( frame.getData(), width, height, 0xff );
@@ -154,7 +157,7 @@ void AutoUnprojectorCV::generateCalibrationImage( PointIR::Frame & frame, unsign
 }
 
 
-bool AutoUnprojectorCV::calibrate( const PointIR::Frame & frame )
+bool AutoOpenCV::calibrate( const PointIR::Frame & frame )
 {
 	cv::Mat image( cv::Size( frame.getWidth(), frame.getHeight() ), CV_8UC1 );
 	assert( image.isContinuous() );
@@ -182,7 +185,7 @@ bool AutoUnprojectorCV::calibrate( const PointIR::Frame & frame )
 	bool found = cv::findChessboardCorners( image, cv::Size( chessboardNumCornersX, chessboardNumCornersY ),
 	                                        imagePoints, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS );
 
-#ifdef _AUTOUNPROJECTORCV__LIVEDEBUG_
+#ifdef _UNPROJECTOR_AUTOOPENCV__LIVEDEBUG_
 	cv::drawChessboardCorners( image, cv::Size( chessboardNumCornersX, chessboardNumCornersY ), imagePoints, found );
 	cv::imshow( "AutoUnprojectorCV", image );
 	cv::waitKey(1); // need this for event processing - window wouldn't be visible
@@ -198,7 +201,7 @@ bool AutoUnprojectorCV::calibrate( const PointIR::Frame & frame )
 }
 
 
-void AutoUnprojectorCV::unproject( uint8_t * image, unsigned int width, unsigned int height ) const
+void AutoOpenCV::unproject( uint8_t * image, unsigned int width, unsigned int height ) const
 {
 	cv::Mat img( cv::Size( width, height ), CV_8UC1, (void*)image );
 	cv::Mat tmp( cv::Size( width, height ), CV_8UC1 );
@@ -207,7 +210,7 @@ void AutoUnprojectorCV::unproject( uint8_t * image, unsigned int width, unsigned
 }
 
 
-void AutoUnprojectorCV::unproject( PointIR::PointArray & pointArray ) const
+void AutoOpenCV::unproject( PointIR::PointArray & pointArray ) const
 {
 	const double * m = (const double*)this->pImpl->normalizedPerspective.data;
 	for( PointIR_Point & point : pointArray )

@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CaptureV4L2.hpp"
+#include "Video4Linux2.hpp"
 #include "../exceptions.hpp"
 
 #include <PointIR/Frame.h>
@@ -38,6 +38,9 @@
 
 #include <linux/videodev2.h>
 #include <malloc.h>
+
+
+using namespace Capture;
 
 
 // Based upon: http://rosettacode.org/wiki/Convert_decimal_number_to_rational
@@ -98,7 +101,7 @@ static void rat_approx( double f, T maxDenom, T * num, T * denom )
 }
 
 
-class CaptureV4L2::Impl
+class Video4Linux2::Impl
 {
 public:
 	typedef struct
@@ -181,7 +184,7 @@ static bool getClosestFrameInterval( int fd, float fps, const struct v4l2_pix_fo
 }
 
 
-CaptureV4L2::CaptureV4L2( const std::string & device, unsigned int width, unsigned int height, float fps )
+Video4Linux2::Video4Linux2( const std::string & device, unsigned int width, unsigned int height, float fps )
 	: pImpl( new Impl ), device(device), width(width), height(height), fps(fps)
 {
 	// check if device exists
@@ -299,7 +302,7 @@ CaptureV4L2::CaptureV4L2( const std::string & device, unsigned int width, unsign
 }
 
 
-CaptureV4L2::~CaptureV4L2()
+Video4Linux2::~Video4Linux2()
 {
 	try
 	{
@@ -328,7 +331,7 @@ CaptureV4L2::~CaptureV4L2()
 }
 
 
-void CaptureV4L2::start()
+void Video4Linux2::start()
 {
 	for( size_t i = 0; i < this->pImpl->buffers.size(); ++i )
 	{
@@ -347,7 +350,7 @@ void CaptureV4L2::start()
 }
 
 
-void CaptureV4L2::stop()
+void Video4Linux2::stop()
 {
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	if( -1 == xioctl( this->pImpl->fd, VIDIOC_STREAMOFF, &type ) )
@@ -357,7 +360,7 @@ void CaptureV4L2::stop()
 }
 
 
-bool CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
+bool Video4Linux2::advanceFrame( bool block, float timeoutSeconds )
 {
 	if( block )
 	{
@@ -427,7 +430,7 @@ bool CaptureV4L2::advanceFrame( bool block, float timeoutSeconds )
 }
 
 
-bool CaptureV4L2::retrieveFrame( PointIR::Frame & frame ) const
+bool Video4Linux2::retrieveFrame( PointIR::Frame & frame ) const
 {
 	if( this->pImpl->currentBuffer < 0 )
 	{
@@ -455,19 +458,19 @@ bool CaptureV4L2::retrieveFrame( PointIR::Frame & frame ) const
 }
 
 
-std::string CaptureV4L2::getName() const
+std::string Video4Linux2::getName() const
 {
 	return std::string( reinterpret_cast< const char * >(this->pImpl->caps.card) );
 }
 
 
-bool CaptureV4L2::canCaptureVideo() const
+bool Video4Linux2::canCaptureVideo() const
 {
 	return this->pImpl->caps.capabilities & V4L2_CAP_VIDEO_CAPTURE;
 }
 
 
-bool CaptureV4L2::canStream() const
+bool Video4Linux2::canStream() const
 {
 	return this->pImpl->caps.capabilities & V4L2_CAP_STREAMING;
 }

@@ -17,10 +17,10 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define _POINTOUTPUTUINPUT__LIVEDEBUG_
+//#define _POINTOUTPUT_UINPUT__LIVEDEBUG_
 
 
-#include "PointOutputUinput.hpp"
+#include "Uinput.hpp"
 #include "../exceptions.hpp"
 
 #include <PointIR/PointArray.h>
@@ -40,6 +40,9 @@
 #include <linux/uinput.h>
 
 
+using namespace PointOutput;
+
+
 static const int resX = 4096;
 static const int resY = 4096;
 static const int fuzzX = 0;
@@ -49,7 +52,7 @@ static const int flatY = 0;
 static const std::string uinputDeviceName("/dev/uinput");
 
 
-class PointOutputUinput::Impl
+class Uinput::Impl
 {
 public:
 	int fd = 0;
@@ -77,7 +80,7 @@ static int xioctl( int fd, unsigned long int request )
 }
 
 
-PointOutputUinput::PointOutputUinput() :
+Uinput::Uinput() :
 	pImpl( new Impl )
 {
 	this->pImpl->fd = open( uinputDeviceName.c_str(), O_WRONLY | O_NONBLOCK );
@@ -147,7 +150,7 @@ PointOutputUinput::PointOutputUinput() :
 }
 
 
-PointOutputUinput::~PointOutputUinput()
+Uinput::~Uinput()
 {
 	if( this->pImpl->fd )
 	{
@@ -159,7 +162,7 @@ PointOutputUinput::~PointOutputUinput()
 }
 
 
-#ifdef _POINTOUTPUTUINPUT__LIVEDEBUG_
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
 #include <map>
 static std::map< int, std::string > eventTypeStrings =
 {
@@ -180,7 +183,7 @@ static std::map< int, std::string > eventCodeStrings =
 
 static void addEvent( std::vector< struct input_event > & events, __u16 type, __u16 code, __s16 value = 0 )
 {
-#ifdef _POINTOUTPUTUINPUT__LIVEDEBUG_
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
 	std::cerr << "PointOutputUinput:\ttype= " << eventTypeStrings[type] << "\tcode= " << eventCodeStrings[code] << "\tvalue= " << value << "\n";
 #endif
 	struct input_event ev = {};
@@ -191,7 +194,7 @@ static void addEvent( std::vector< struct input_event > & events, __u16 type, __
 }
 
 
-void PointOutputUinput::outputPoints( const PointIR::PointArray & pointArray )
+void Uinput::outputPoints( const PointIR::PointArray & pointArray )
 {
 	// https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt
 	std::vector< struct input_event > events;
@@ -246,11 +249,11 @@ void PointOutputUinput::outputPoints( const PointIR::PointArray & pointArray )
 		ssize_t ret = write( this->pImpl->fd, &event, sizeof(event) );
 		if( ret != sizeof( struct input_event ) )
 			throw SYSTEM_ERROR( errno, "write(\""+uinputDeviceName+"\",event,"+std::to_string(sizeof(event))+") = "+std::to_string(ret) );
-#ifdef _POINTOUTPUTUINPUT__LIVEDEBUG_
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
 		std::cerr << ".";
 #endif
 	}
-#ifdef _POINTOUTPUTUINPUT__LIVEDEBUG_
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
 	std::cerr << "\n";
 #endif
 
@@ -270,7 +273,7 @@ void PointOutputUinput::outputPoints( const PointIR::PointArray & pointArray )
 
 	if( written != packetSize )
 		std::cerr << "PointOutputUinput: Failed to write " << events.size() << " events, each " << sizeof(struct input_event) << " bytes - " << written << " of " << packetSize << " bytes written\n";
-#ifdef _POINTOUTPUTUINPUT__LIVEDEBUG_
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
 	else
 		std::cerr << "PointOutputUinput: Written " << events.size() << " events, each " << sizeof(struct input_event) << " bytes\n";
 #endif

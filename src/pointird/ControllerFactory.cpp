@@ -22,7 +22,7 @@
 #include "Controller/AController.hpp"
 
 #ifdef POINTIR_DBUS
-	#include "Controller/DBusController.hpp"
+	#include "Controller/DBus.hpp"
 #endif
 
 #include <string>
@@ -44,7 +44,7 @@ ControllerFactory::ControllerFactory() : pImpl( new Impl )
 {
 #ifdef POINTIR_DBUS
 	this->pImpl->controllerMap.insert( { "dbus", [this] ()
-		{ return new DBusController( *(this->processor) ); }
+		{ return new Controller::DBus( *(this->processor) ); }
 	} );
 #endif
 }
