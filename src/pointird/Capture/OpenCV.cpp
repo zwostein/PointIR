@@ -78,7 +78,7 @@ void OpenCV::start()
 			str = std::to_string( this->pImpl->deviceNr );
 		else
 			str = this->pImpl->fileName;
-		std::cerr << "CaptureCV: Could not open \"" << str << "\"\n";
+		std::cerr << "Capture::OpenCV: Could not open \"" << str << "\"\n";
 		return;
 	}
 

@@ -165,7 +165,7 @@ void OpenCV::detect( PointIR::PointArray & pointArray, const PointIR::Frame & fr
 	}
 
 #ifdef _POINTDETECTOR_OPENCV__LIVEDEBUG_
-	cv::imshow( "PointDetectorOpenCV", imageDebug );
+	cv::imshow( "PointDetector::OpenCV", imageDebug );
 	cv::waitKey(1); // need this for event processing - window wouldn't be visible
 #endif
 }

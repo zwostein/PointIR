@@ -396,7 +396,7 @@ void DBus::dispatch()
 		std::string iface( dbus_message_get_interface( message ) );
 		std::string member( dbus_message_get_member( message ) );
 
-		std::cout << "DBusController: Called \"" << member << "\" on \"" << iface << "\"\n";
+		std::cout << "Controller::DBus: Called \"" << member << "\" on \"" << iface << "\"\n";
 
 		// lookup called interface
 		Impl::InterfaceMap::const_iterator ifaceit = this->pImpl->interfaceMap.find( iface );

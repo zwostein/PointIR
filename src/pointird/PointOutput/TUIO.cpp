@@ -56,7 +56,7 @@ TUIO::TUIO( std::string address ) :
 	this->pImpl->tuioAddr = lo_address_new_from_url( address.c_str() );
 	if( !this->pImpl->tuioAddr )
 		throw RUNTIME_ERROR("Could not start OSC/TUIO server");
-	std::cout << "TUIOPointOutput: Sending OSC/TUIO packets to \"" << lo_address_get_url(this->pImpl->tuioAddr) << "\"\n";
+	std::cout << "PointOutput::TUIO: Started server on \"" << lo_address_get_url(this->pImpl->tuioAddr) << "\"\n";
 }
 
 
@@ -115,7 +115,7 @@ void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 	lo_bundle_add_message( bundle, "/tuio/2Dcur", msg ) ;
 
 	if( lo_send_bundle( this->pImpl->tuioAddr, bundle ) == -1 )
-		std::cerr << "OSC error " << lo_address_errno(this->pImpl->tuioAddr) <<": " << lo_address_errstr(this->pImpl->tuioAddr) << "\n";
+		std::cerr << "PointOutput::TUIO: OSC error " << lo_address_errno(this->pImpl->tuioAddr) <<": " << lo_address_errstr(this->pImpl->tuioAddr) << "\n";
 
 	lo_bundle_free( bundle ) ;
 

@@ -245,7 +245,7 @@ Video4Linux2::Video4Linux2( const std::string & device, unsigned int width, unsi
 
 	if( this->width != fmt.fmt.pix.width || this->height != fmt.fmt.pix.height )
 	{
-		std::cerr << "CaptureV4L2: \"" << this->device << "\": " << "requested video of size " << this->width << "x" << this->height
+		std::cerr << "Capture::Video4Linux2: \"" << this->device << "\": " << "requested video of size " << this->width << "x" << this->height
 			<< " failed, using " << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height << "instead\n";
 	}
 
@@ -264,10 +264,10 @@ Video4Linux2::Video4Linux2( const std::string & device, unsigned int width, unsi
 	}
 	else
 	{
-		std::cerr << "CaptureV4L2: \"" << this->device << "\": " << "Could not find any supported frame interval setting\n";
+		std::cerr << "Capture::Video4Linux2: \"" << this->device << "\": " << "Could not find any supported frame interval setting\n";
 	}
 
-	std::cout << "CaptureV4L2: \"" << this->device << "\": " << "Selected format " << this->width << "x" << this->height
+		std::cout << "Capture::Video4Linux2: \"" << this->device << "\": " << "Selected format " << this->width << "x" << this->height
 		<< " @ " << streamParm.parm.capture.timeperframe.numerator << "/" << streamParm.parm.capture.timeperframe.denominator << " s frame interval\n";
 
 	// setup memory mapped stream
@@ -434,7 +434,7 @@ bool Video4Linux2::retrieveFrame( PointIR::Frame & frame ) const
 {
 	if( this->pImpl->currentBuffer < 0 )
 	{
-		std::cerr << "CaptureV4L2: no buffer available\n";
+		std::cerr << "Capture::Video4Linux2: no buffer available\n";
 		return false;
 	}
 

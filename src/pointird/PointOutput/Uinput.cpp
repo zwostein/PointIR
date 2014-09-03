@@ -184,7 +184,7 @@ static std::map< int, std::string > eventCodeStrings =
 static void addEvent( std::vector< struct input_event > & events, __u16 type, __u16 code, __s16 value = 0 )
 {
 #ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
-	std::cerr << "PointOutputUinput:\ttype= " << eventTypeStrings[type] << "\tcode= " << eventCodeStrings[code] << "\tvalue= " << value << "\n";
+	std::cerr << "PointOutput::Uinput:\ttype= " << eventTypeStrings[type] << "\tcode= " << eventCodeStrings[code] << "\tvalue= " << value << "\n";
 #endif
 	struct input_event ev = {};
 	ev.type = type;
