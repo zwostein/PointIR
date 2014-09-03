@@ -70,7 +70,13 @@ namespace PointIR
 			free( frame );
 		}
 
-		Frame( const Frame & ) = delete; // disable copy constructor
+		Frame( const Frame & other )
+		{
+			frame = (PointIR_Frame*) malloc( sizeInBytes( other.getWidth(), other.getHeight() ) );
+			if( !frame )
+				throw std::bad_alloc();
+			memcpy( frame, other.frame, sizeInBytes( other.getWidth(), other.getHeight() ) );
+		}
 
 		Frame & operator=( const Frame & other )
 		{
@@ -185,7 +191,7 @@ namespace PointIR
 	private:
 		static size_t sizeInBytes( WidthType newWidth, HeightType newHeight ) { return sizeof(PointIR_Frame) + newWidth * newHeight; }
 
-		PointIR_Frame * frame;
+		PointIR_Frame * frame = nullptr;
 	};
 }
 

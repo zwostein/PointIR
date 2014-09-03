@@ -69,12 +69,19 @@ namespace PointIR
 			free( pointArray );
 		}
 
-		PointArray( const PointArray & ) = delete; // disable copy constructor
+		PointArray( const PointArray & other )
+		{
+			pointArray = (PointIR_PointArray*) malloc( sizeInBytes( other.size() ) );
+			if( !pointArray )
+				throw std::bad_alloc();
+			pointArrayCapacity = other.size();
+			memcpy( pointArray, other.pointArray, sizeInBytes( other.size() ) );
+		}
 
 		PointArray & operator=( const PointArray & other )
 		{
-			this->resize( other.size() );
-			memcpy( this->pointArray, other.pointArray, sizeInBytes( other.size() ) );
+			resize( other.size() );
+			memcpy( pointArray, other.pointArray, sizeInBytes( other.size() ) );
 			return *this;
 		}
 
@@ -88,7 +95,7 @@ namespace PointIR
 		{
 			if( newCount > pointArrayCapacity )
 				_resize( newCount );
-			pointArray->count = pointArrayCapacity;
+			pointArray->count = newCount;
 		}
 
 
@@ -197,8 +204,8 @@ namespace PointIR
 			pointArrayCapacity = newCapacity;
 		}
 
-		CountType pointArrayCapacity;
-		PointIR_PointArray * pointArray;
+		CountType pointArrayCapacity = 0;
+		PointIR_PointArray * pointArray = nullptr;
 	};
 }
 
