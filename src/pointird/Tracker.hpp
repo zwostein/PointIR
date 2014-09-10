@@ -33,10 +33,12 @@ public:
 	Tracker( const Tracker & ) = delete; // disable copy constructor
 
 	Tracker();
+	Tracker( unsigned int maxID );
 	~Tracker();
 
-	std::vector< int > & assignIDs( const PointIR::PointArray & lastPoints, const std::vector<int> & lastIDs,
-	                                const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs );
+	void assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
+	                const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
+	                std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious );
 
 private:
 	class Impl;

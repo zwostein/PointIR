@@ -43,10 +43,13 @@ public:
 	lo_address tuioAddr = nullptr;
 	uint32_t frameID = 0;
 	lo_timetag lastTimetag;
+
+	Tracker tracker;
 	PointIR::PointArray previousPoints;
 	std::vector< int > previousIDs;
 	std::vector< int > currentIDs;
-	Tracker tracker;
+	std::vector< int > currentToPrevious;
+	std::vector< int > previousToCurrent;
 };
 
 
@@ -68,7 +71,9 @@ TUIO::~TUIO()
 
 void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 {
-	std::vector< int > & mapToPrevious = this->pImpl->tracker.assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs, currentPoints, this->pImpl->currentIDs );
+	this->pImpl->tracker.assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs,
+	                                currentPoints, this->pImpl->currentIDs,
+	                                this->pImpl->previousToCurrent, this->pImpl->currentToPrevious );
 
 	lo_message msg;
 
@@ -85,8 +90,9 @@ void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 	lo_message_add_string( msg, "alive" );
 	for( unsigned int i = 0; i < this->pImpl->currentIDs.size(); i++ )
 	{
-		if( this->pImpl->currentIDs[i] != -1 )
-			lo_message_add_int32( msg, this->pImpl->currentIDs[i] );
+		if( this->pImpl->currentIDs[i] < 0 )
+			continue;
+		lo_message_add_int32( msg, this->pImpl->currentIDs[i] );
 	}
 	lo_bundle_add_message( bundle, "/tuio/2Dcur", msg ) ;
 
@@ -95,9 +101,13 @@ void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 
 	for( unsigned int i = 0; i < currentPoints.size(); i++ )
 	{
+		if( this->pImpl->currentIDs[i] < 0 )
+			continue;
+
 		PointIR::Point diff( 0.0f, 0.0f );
-		if( mapToPrevious[i] >= 0 )
-			diff = ( this->pImpl->previousPoints[mapToPrevious[i]] - currentPoints[i] ) / dt;
+		if( this->pImpl->currentToPrevious[i] >= 0 )
+			diff = ( this->pImpl->previousPoints[this->pImpl->currentToPrevious[i]] - currentPoints[i] ) / dt;
+
 		msg = lo_message_new();
 		lo_message_add_string( msg, "set" );
 		lo_message_add_int32( msg, this->pImpl->currentIDs[i] );

@@ -24,7 +24,9 @@
 
 #include <iostream>
 #include <vector>
+#include <set>
 #include <algorithm>
+#include <limits>
 
 #include <cassert>
 
@@ -72,12 +74,45 @@ class Tracker::Impl
 {
 public:
 	Matrix< PointIR::Point::Component > distancesCurrentPrevious;
-	std::vector< int > bestPreviousMatches;
+
+	std::set< int > usedIDs;
+	unsigned int maxID = std::numeric_limits<int>::max();
+
+	int getFreeID()
+	{
+		int free = 0;
+		// iterate over (sorted) set and use the first gap
+		for( auto id : usedIDs )
+		{
+			if( free != id )
+				break;
+			++free;
+		}
+		if( free >= 0 && free <= (int)maxID )
+		{
+			usedIDs.insert( free );
+			return free;
+		}
+		else
+			return -1;
+	}
+
+	void setFreeID( int id )
+	{
+		usedIDs.erase( id );
+	}
 };
 
 
 Tracker::Tracker() : pImpl(new Impl)
 {
+}
+
+
+Tracker::Tracker( unsigned int maxID ) : pImpl(new Impl)
+{
+	if( maxID <= std::numeric_limits<int>::max() )
+		this->pImpl->maxID = maxID;
 }
 
 
@@ -87,10 +122,12 @@ Tracker::~Tracker()
 
 
 //TODO: maybe use the Hungary Algorithm instead
-std::vector< int > & Tracker::assignIDs( const PointIR::PointArray & previousPoints, const std::vector< int > & previousIDs,
-                         const PointIR::PointArray & currentPoints, std::vector< int > & currentIDs )
+void Tracker::assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
+                         const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
+                         std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )
 {
-	this->pImpl->bestPreviousMatches.resize( currentPoints.size() );
+	// build distance matrix and mark best matches for each point
+	currentToPrevious.resize( currentPoints.size() );
 	this->pImpl->distancesCurrentPrevious.resize( currentPoints.size(), previousPoints.size() );
 	for( unsigned int currentIdx = 0; currentIdx < currentPoints.size(); ++currentIdx )
 	{
@@ -107,44 +144,56 @@ std::vector< int > & Tracker::assignIDs( const PointIR::PointArray & previousPoi
 				bestMatchIndex = previousIdx;
 			}
 		}
-		this->pImpl->bestPreviousMatches[currentIdx] = bestMatchIndex;
+		currentToPrevious[currentIdx] = bestMatchIndex;
 	}
 
 	// if two points have the same best match, check which one is closer and treat the other one as new
-	for( unsigned int a = 0; a < this->pImpl->bestPreviousMatches.size(); ++a )
+	for( unsigned int a = 0; a < currentToPrevious.size(); ++a )
 	{
-		for( unsigned int b = a+1; b < this->pImpl->bestPreviousMatches.size(); ++b )
+		for( unsigned int b = a+1; b < currentToPrevious.size(); ++b )
 		{
-			if( this->pImpl->bestPreviousMatches[a] < 0 || this->pImpl->bestPreviousMatches[b] < 0 )
-				continue;
+			if( currentToPrevious[a] < 0 || currentToPrevious[b] < 0 )
+				continue; // at least one of the points doesn't have a match at all
 
-			if( this->pImpl->bestPreviousMatches[a] != this->pImpl->bestPreviousMatches[b] )
-				continue;
+			if( currentToPrevious[a] != currentToPrevious[b] )
+				continue; // the two points do not have the same match
 
-			if( this->pImpl->distancesCurrentPrevious( a, this->pImpl->bestPreviousMatches[a] )
-			    <= this->pImpl->distancesCurrentPrevious( b, this->pImpl->bestPreviousMatches[b] ) )
+			if( this->pImpl->distancesCurrentPrevious( a, currentToPrevious[a] )
+			 <= this->pImpl->distancesCurrentPrevious( b, currentToPrevious[b] ) )
 			{
-				this->pImpl->bestPreviousMatches[b] = -1;
+				currentToPrevious[b] = -1;
 			} else {
-				this->pImpl->bestPreviousMatches[a] = -1;
+				currentToPrevious[a] = -1;
 			}
 		}
 	}
 
-	int nextFreeID = 0;
-	if( previousIDs.size() )
-		nextFreeID = *std::max_element( previousIDs.begin(), previousIDs.end() ) + 1;
-
+	// assign IDs to new points
 	currentIDs.resize( currentPoints.size() );
 	for( unsigned int currentIdx = 0; currentIdx < currentIDs.size(); ++currentIdx )
 	{
-		if( this->pImpl->bestPreviousMatches[currentIdx] < 0 || (int)previousIDs.size() <= this->pImpl->bestPreviousMatches[currentIdx] )
+		if( currentToPrevious[currentIdx] < 0 || (int)previousIDs.size() <= currentToPrevious[currentIdx] )
 		{
-			currentIDs[currentIdx] = nextFreeID++;
+			currentIDs[currentIdx] = this->pImpl->getFreeID();
 		} else {
-			currentIDs[currentIdx] = previousIDs[this->pImpl->bestPreviousMatches[currentIdx]];
+			currentIDs[currentIdx] = previousIDs[currentToPrevious[currentIdx]];
 		}
 	}
 
-	return this->pImpl->bestPreviousMatches;
+	// map previous indices to current indices if they still exist and mark IDs unused if they disappeared
+	previousToCurrent.resize( previousPoints.size() );
+	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); previousIdx++ )
+	{
+		previousToCurrent[previousIdx] = -1;
+		for( unsigned int currentIdx = 0; currentIdx < currentToPrevious.size(); currentIdx++ )
+		{
+			if( currentToPrevious[currentIdx] == (int)previousIdx )
+			{
+				previousToCurrent[previousIdx] = currentIdx;
+				break;
+			}
+		}
+		if( previousToCurrent[previousIdx] < 0 )
+			this->pImpl->setFreeID( previousIDs[previousIdx] );
+	}
 }
