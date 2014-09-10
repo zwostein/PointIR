@@ -78,8 +78,7 @@ void OpenCV::start()
 			str = std::to_string( this->pImpl->deviceNr );
 		else
 			str = this->pImpl->fileName;
-		std::cerr << "Capture::OpenCV: Could not open \"" << str << "\"\n";
-		return;
+		throw RUNTIME_ERROR( "Capture::OpenCV: Could not open \"" + str + "\"" );
 	}
 
 	this->pImpl->videoCapture->set( CV_CAP_PROP_FRAME_WIDTH, this->width );

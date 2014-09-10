@@ -50,6 +50,7 @@ option( POINTIR_UINPUT "Enable uinput API for multitouch device emulation output
 option( POINTIR_V4L2 "Enable Video4Linux2 API for video capture" ${LINUX} )
 option( POINTIR_DBUS "Enable DBus controller" ON )
 option( POINTIR_TUIO "Enable TUIO output module" ON )
+option( POINTIR_WIN8TOUCHINJECTION "Enable Windows Touch Injection API" OFF )
 
 set( POINTIR_NEED_TRACKER OFF )
 
@@ -94,6 +95,14 @@ if( POINTIR_TUIO )
 	include_directories( ${LIBLO_INCLUDE_DIRS} )
 	add_definitions( ${LIBLO_DEFINITIONS} )
 	list( APPEND POINTIR_LIBRARIES ${LIBLO_LIBRARIES} )
+	set( POINTIR_NEED_TRACKER ON )
+endif()
+
+if( POINTIR_WIN8TOUCHINJECTION )
+	add_definitions( -DPOINTIR_WIN8TOUCHINJECTION )
+	list( APPEND POINTIR_SOURCES
+		src/pointird/PointOutput/Win8TouchInjection.cpp
+	)
 	set( POINTIR_NEED_TRACKER ON )
 endif()
 

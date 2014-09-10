@@ -39,6 +39,10 @@
 	#include "PointOutput/TUIO.hpp"
 #endif
 
+#ifdef POINTIR_WIN8TOUCHINJECTION
+	#include "PointOutput/Win8TouchInjection.hpp"
+#endif
+
 #include <map>
 #include <functional>
 
@@ -71,6 +75,11 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 #ifdef POINTIR_TUIO
 	this->pImpl->pointOutputMap.insert( { "tuio", [] ()
 		{ return new PointOutput::TUIO; }
+	} );
+#endif
+#ifdef POINTIR_WIN8TOUCHINJECTION
+	this->pImpl->pointOutputMap.insert( { "win8", [] ()
+		{ return new PointOutput::Win8TouchInjection; }
 	} );
 #endif
 	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *

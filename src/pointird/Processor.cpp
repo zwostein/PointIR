@@ -127,8 +127,16 @@ void Processor::processFrame()
 	if( !this->isProcessing() )
 		return;
 
-	this->capture.advanceFrame();
-	this->capture.retrieveFrame( this->frame );
+	if( !this->capture.advanceFrame() )
+	{
+		std::cerr << "Processor: Could not get next frame.\n";
+		return;
+	}
+	if( !this->capture.retrieveFrame( this->frame ) )
+	{
+		std::cerr << "Processor: Could not retrieve frame.\n";
+		return;
+	}
 
 	if( this->pImpl->frameOutputEnabled )
 	{
