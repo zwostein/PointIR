@@ -1,0 +1,14 @@
+#!/bin/sh
+# This is an example script that gets called just before pointird performs a calibration.
+# pointird will not proceed as long as this script is running.
+
+# Here, we are going to control a servo motor to remove an IR-filter attached to its shaft using ServUSB.
+# (https://github.com/zwostein/ServUSB)
+# This script will enable the servo and move the shaft into some position to remove the filter.
+# It will wait a second for the servo to finish its movement and then disables the servo again. (so the servo can be moved by hand)
+
+echo -n "Removing IR pass filter ... "
+/usr/local/bin/servusb -e 127
+sleep 1
+/usr/local/bin/servusb -d
+echo "done"

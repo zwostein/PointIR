@@ -149,8 +149,8 @@ int main( int argc, char ** argv )
 	CalibrationDataFile::setDirectory( "/tmp/" );
 	CalibrationImageFile::setDirectory( "/tmp/");
 #else
-	calibrationHook.setBeginHook( "pointir_calibrationBeginHook" );
-	calibrationHook.setEndHook( "pointir_calibrationEndHook" );
+	calibrationHook.setBeginHook( "pointir_calibrationBeginHook.bat" );
+	calibrationHook.setEndHook( "pointir_calibrationEndHook.bat" );
 	CalibrationDataFile::setDirectory( "" );
 	CalibrationImageFile::setDirectory( "" );
 #endif
