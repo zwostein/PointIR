@@ -28,11 +28,16 @@ namespace PointIR
 }
 
 
+namespace PointDetector
+{
+
 class APointDetector
 {
 public:
 	virtual void detect( PointIR::PointArray & pointArray, const PointIR::Frame & frame ) = 0;
 };
+
+}
 
 
 #endif

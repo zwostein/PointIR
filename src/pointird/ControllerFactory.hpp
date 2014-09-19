@@ -27,7 +27,11 @@
 
 
 class Processor;
-class AController;
+
+namespace Controller
+{
+	class AController;
+}
 
 
 class ControllerFactory
@@ -36,7 +40,7 @@ public:
 	ControllerFactory();
 	~ControllerFactory();
 
-	AController * newController( const std::string name ) const;
+	Controller::AController * newController( const std::string name ) const;
 
 	std::vector< std::string > getAvailableControllerNames() const;
 

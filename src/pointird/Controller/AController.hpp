@@ -21,12 +21,17 @@
 #define _ACONTROLLER__INCLUDED_
 
 
+namespace Controller
+{
+
 class AController
 {
 public:
 	virtual ~AController() {}
 	virtual void dispatch() = 0;
 };
+
+}
 
 
 #endif

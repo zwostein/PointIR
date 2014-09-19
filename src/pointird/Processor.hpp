@@ -31,12 +31,35 @@
 #include <functional>
 
 
-class ACapture;
-class AFrameOutput;
-class APointDetector;
-class AUnprojector;
-class APointFilter;
-class APointOutput;
+namespace Capture
+{
+	class ACapture;
+}
+
+namespace FrameOutput
+{
+	class AFrameOutput;
+}
+
+namespace PointDetector
+{
+	class APointDetector;
+}
+
+namespace Unprojector
+{
+	class AUnprojector;
+}
+
+namespace PointFilter
+{
+	class APointFilter;
+}
+
+namespace PointOutput
+{
+	class APointOutput;
+}
 
 
 class Processor
@@ -51,12 +74,12 @@ public:
 
 	Processor( const Processor & ) = delete; // disable copy constructor
 
-	Processor( ACapture & capture, APointDetector & detector, AUnprojector & unprojector );
+	Processor( Capture::ACapture & capture, PointDetector::APointDetector & detector, Unprojector::AUnprojector & unprojector );
 	~Processor();
 
-	ACapture & getCapture() const { return this->capture; }
-	APointDetector & getPointDetector() const { return this->detector; }
-	AUnprojector & getUnprojector() const { return this->unprojector; }
+	Capture::ACapture & getCapture() const { return this->capture; }
+	PointDetector::APointDetector & getPointDetector() const { return this->detector; }
+	Unprojector::AUnprojector & getUnprojector() const { return this->unprojector; }
 
 	void processFrame();
 
@@ -70,20 +93,20 @@ public:
 	bool isCalibrating() const;
 	bool isCalibrationSucceeded() const;
 
-	bool addFrameOutput( AFrameOutput * output );
-	bool removeFrameOutput( AFrameOutput * output );
+	bool addFrameOutput( FrameOutput::AFrameOutput * output );
+	bool removeFrameOutput( FrameOutput::AFrameOutput * output );
 	void setFrameOutputEnabled( bool enable );
 	bool isFrameOutputEnabled() const;
-	std::set<AFrameOutput*> getFrameOutputs();
+	std::set<FrameOutput::AFrameOutput*> getFrameOutputs();
 
-	bool addPointOutput( APointOutput * output );
-	bool removePointOutput( APointOutput * output );
+	bool addPointOutput( PointOutput::APointOutput * output );
+	bool removePointOutput( PointOutput::APointOutput * output );
 	void setPointOutputEnabled( bool enable );
 	bool isPointOutputEnabled() const;
-	std::set<APointOutput*> getPointOutputs();
+	std::set<PointOutput::APointOutput*> getPointOutputs();
 
-	void setPointFilter( APointFilter * pointFilter );
-	APointFilter * getPointFilter() const;
+	void setPointFilter( PointFilter::APointFilter * pointFilter );
+	PointFilter::APointFilter * getPointFilter() const;
 
 	const PointIR_Frame * getProcessedFrame() const { return (const PointIR_Frame *)(this->frame); }
 
@@ -91,9 +114,9 @@ private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
 
-	ACapture & capture;
-	APointDetector & detector;
-	AUnprojector & unprojector;
+	Capture::ACapture & capture;
+	PointDetector::APointDetector & detector;
+	Unprojector::AUnprojector & unprojector;
 
 	PointIR::Frame frame;
 	PointIR::PointArray pointArray;

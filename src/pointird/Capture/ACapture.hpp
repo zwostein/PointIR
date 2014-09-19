@@ -32,6 +32,9 @@ namespace PointIR
 }
 
 
+namespace Capture
+{
+
 class ACapture
 {
 public:
@@ -44,6 +47,8 @@ public:
 
 	virtual bool isCapturing() const = 0;
 };
+
+}
 
 
 #endif

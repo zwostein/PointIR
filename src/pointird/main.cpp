@@ -45,7 +45,7 @@
 #include "Unprojector/CalibrationImageFile.hpp"
 
 #include "PointFilter/OffscreenFilter.hpp"
-#include "PointFilter/PointFilterChain.hpp"
+#include "PointFilter/Chain.hpp"
 
 #include "Processor.hpp"
 
@@ -146,13 +146,13 @@ int main( int argc, char ** argv )
 	captureFactory.deviceName = "/dev/video0";
 	calibrationHook.setBeginHook( "/etc/PointIR/calibrationBeginHook" );
 	calibrationHook.setEndHook( "/etc/PointIR/calibrationEndHook" );
-	CalibrationDataFile::setDirectory( "/tmp/" );
-	CalibrationImageFile::setDirectory( "/tmp/");
+	Unprojector::CalibrationDataFile::setDirectory( "/tmp/" );
+	Unprojector::CalibrationImageFile::setDirectory( "/tmp/");
 #else
 	calibrationHook.setBeginHook( "pointir_calibrationBeginHook.bat" );
 	calibrationHook.setEndHook( "pointir_calibrationEndHook.bat" );
-	CalibrationDataFile::setDirectory( "" );
-	CalibrationImageFile::setDirectory( "" );
+	Unprojector::CalibrationDataFile::setDirectory( "" );
+	Unprojector::CalibrationImageFile::setDirectory( "" );
 #endif
 
 	////////////////////////////////////////////////////////////////
@@ -270,7 +270,7 @@ int main( int argc, char ** argv )
 	////////////////////////////////////////////////////////////////
 	// build frame processor
 
-	ACapture * capture = captureFactory.newCapture( captureName );
+	Capture::ACapture * capture = captureFactory.newCapture( captureName );
 	if( !capture )
 	{
 		std::cerr << "Could not create capture \"" << captureName << "\"\n";
@@ -281,9 +281,9 @@ int main( int argc, char ** argv )
 	detector.setBoundingFilterEnabled( true );
 
 	Unprojector::AutoOpenCV unprojector;
-	CalibrationDataFile::load( unprojector );
+	Unprojector::CalibrationDataFile::load( unprojector );
 
-	PointFilterChain pointFilterChain;
+	PointFilter::Chain pointFilterChain;
 
 	PointFilter::OffscreenFilter offscreenFilter;
 	pointFilterChain.appendFilter( &offscreenFilter );
@@ -295,11 +295,11 @@ int main( int argc, char ** argv )
 	outputFactory.processor = &processor;
 	for( std::string & outputName : outputNames )
 	{
-		APointOutput * pointOutput = outputFactory.newPointOutput( outputName );
+		PointOutput::APointOutput * pointOutput = outputFactory.newPointOutput( outputName );
 		if( pointOutput )
 			processor.addPointOutput( pointOutput );
 
-		AFrameOutput * frameOutput = outputFactory.newFrameOutput( outputName );
+		FrameOutput::AFrameOutput * frameOutput = outputFactory.newFrameOutput( outputName );
 		if( frameOutput )
 			processor.addFrameOutput( frameOutput );
 
@@ -316,12 +316,12 @@ int main( int argc, char ** argv )
 	////////////////////////////////////////////////////////////////
 	// create processor controllers
 
-	std::set< AController * > controllers;
+	std::set< Controller::AController * > controllers;
 
 	controllerFactory.processor = &processor;
 	for( std::string & controllerName : controllerNames )
 	{
-		AController * controller = controllerFactory.newController( controllerName );
+		Controller::AController * controller = controllerFactory.newController( controllerName );
 		if( !controller )
 		{
 			std::cerr << "Could not create controller \"" << controllerName << "\"\n";

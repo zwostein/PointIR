@@ -27,8 +27,16 @@
 
 
 class Processor;
-class APointOutput;
-class AFrameOutput;
+
+namespace PointOutput
+{
+	class APointOutput;
+}
+
+namespace FrameOutput
+{
+	class AFrameOutput;
+}
 
 
 class OutputFactory
@@ -37,8 +45,8 @@ public:
 	OutputFactory();
 	~OutputFactory();
 
-	APointOutput * newPointOutput( const std::string name ) const;
-	AFrameOutput * newFrameOutput( const std::string name ) const;
+	PointOutput::APointOutput * newPointOutput( const std::string name ) const;
+	FrameOutput::AFrameOutput * newFrameOutput( const std::string name ) const;
 
 	std::vector< std::string > getAvailablePointOutputNames() const;
 	std::vector< std::string > getAvailableFrameOutputNames() const;

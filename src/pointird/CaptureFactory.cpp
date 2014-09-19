@@ -35,7 +35,7 @@
 class CaptureFactory::Impl
 {
 public:
-	typedef std::function< ACapture*(void) > CaptureCreator;
+	typedef std::function< Capture::ACapture*(void) > CaptureCreator;
 	typedef std::map< std::string, CaptureCreator > CaptureMap;
 
 	CaptureMap captureMap;
@@ -71,12 +71,12 @@ CaptureFactory::~CaptureFactory()
 }
 
 
-ACapture * CaptureFactory::newCapture( const std::string name ) const
+Capture::ACapture * CaptureFactory::newCapture( const std::string name ) const
 {
 	Impl::CaptureMap::const_iterator it = this->pImpl->captureMap.find( name );
 	if( it == this->pImpl->captureMap.end() )
 		return nullptr;
-	ACapture * output = it->second();
+	Capture::ACapture * output = it->second();
 	return output;
 }
 

@@ -26,11 +26,14 @@
 #include <list>
 
 
-class PointFilterChain : public APointFilter
+namespace PointFilter
+{
+
+class Chain : public APointFilter
 {
 public:
-	PointFilterChain() {}
-	PointFilterChain( std::list< const APointFilter * > & filterChain ) : filterChain(filterChain) {}
+	Chain() {}
+	Chain( std::list< const APointFilter * > & filterChain ) : filterChain(filterChain) {}
 
 	void setFilterChain( std::list< const APointFilter * > & filterChain )
 	{
@@ -61,6 +64,8 @@ public:
 private:
 	std::list< const APointFilter * > filterChain;
 };
+
+}
 
 
 #endif

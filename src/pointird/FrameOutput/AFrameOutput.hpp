@@ -30,12 +30,17 @@ namespace PointIR
 }
 
 
+namespace FrameOutput
+{
+
 class AFrameOutput
 {
 public:
 	virtual ~AFrameOutput() {}
 	virtual void outputFrame( const PointIR::Frame & frame ) = 0;
 };
+
+}
 
 
 #endif

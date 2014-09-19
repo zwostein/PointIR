@@ -30,11 +30,16 @@ namespace PointIR
 }
 
 
+namespace PointFilter
+{
+
 class APointFilter
 {
 public:
 	virtual void filterPoints( PointIR::PointArray & pointArray ) const = 0;
 };
+
+}
 
 
 #endif

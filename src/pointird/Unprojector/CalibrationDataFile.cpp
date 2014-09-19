@@ -25,6 +25,9 @@
 #include <vector>
 
 
+using namespace Unprojector;
+
+
 // the default directory
 std::string CalibrationDataFile::directory;
 

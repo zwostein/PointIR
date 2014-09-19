@@ -24,6 +24,9 @@
 #include <string>
 
 
+namespace Unprojector
+{
+
 class AUnprojector;
 
 
@@ -46,6 +49,8 @@ private:
 	static std::string directory;
 	AUnprojector & unprojector;
 };
+
+}
 
 
 #endif

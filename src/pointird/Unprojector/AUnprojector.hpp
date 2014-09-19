@@ -34,6 +34,9 @@ namespace PointIR
 }
 
 
+namespace Unprojector
+{
+
 class AUnprojector
 {
 public:
@@ -45,6 +48,8 @@ public:
 	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) = 0;
 
 };
+
+}
 
 
 #endif

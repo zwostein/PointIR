@@ -33,7 +33,7 @@
 class ControllerFactory::Impl
 {
 public:
-	typedef std::function< AController*(void) > ControllerCreator;
+	typedef std::function< Controller::AController*(void) > ControllerCreator;
 	typedef std::map< std::string, ControllerCreator > ControllerMap;
 
 	ControllerMap controllerMap;
@@ -55,12 +55,12 @@ ControllerFactory::~ControllerFactory()
 }
 
 
-AController * ControllerFactory::newController( const std::string name ) const
+Controller::AController * ControllerFactory::newController( const std::string name ) const
 {
 	Impl::ControllerMap::const_iterator it = this->pImpl->controllerMap.find( name );
 	if( it == this->pImpl->controllerMap.end() )
 		return nullptr;
-	AController * output = it->second();
+	Controller::AController * output = it->second();
 	return output;
 }
 

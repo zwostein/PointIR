@@ -30,12 +30,17 @@ namespace PointIR
 }
 
 
+namespace PointOutput
+{
+
 class APointOutput
 {
 public:
 	virtual ~APointOutput() {}
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) = 0;
 };
+
+}
 
 
 #endif

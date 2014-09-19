@@ -40,10 +40,10 @@ class Processor::Impl
 public:
 	Impl( Processor & processor ) : processor(processor) {}
 
-	APointFilter * filter = nullptr;
+	PointFilter::APointFilter * filter = nullptr;
 
-	std::set< AFrameOutput * > frameOutputs;
-	std::set< APointOutput * > pointOutputs;
+	std::set< FrameOutput::AFrameOutput * > frameOutputs;
+	std::set< PointOutput::APointOutput * > pointOutputs;
 	bool frameOutputEnabled = true;
 	bool pointOutputEnabled = true;
 
@@ -73,7 +73,7 @@ private:
 };
 
 
-Processor::Processor( ACapture & capture, APointDetector & detector, AUnprojector & unprojector ) :
+Processor::Processor( Capture::ACapture & capture, PointDetector::APointDetector & detector, Unprojector::AUnprojector & unprojector ) :
 	pImpl( new Impl( *this ) ),
 	capture(capture),
 	detector(detector),
@@ -87,13 +87,13 @@ Processor::~Processor()
 }
 
 
-std::set< AFrameOutput * > Processor::getFrameOutputs()
+std::set< FrameOutput::AFrameOutput * > Processor::getFrameOutputs()
 {
 	return this->pImpl->frameOutputs;
 }
 
 
-std::set< APointOutput * > Processor::getPointOutputs()
+std::set< PointOutput::APointOutput * > Processor::getPointOutputs()
 {
 	return this->pImpl->pointOutputs;
 }
@@ -140,14 +140,14 @@ void Processor::processFrame()
 
 	if( this->pImpl->frameOutputEnabled )
 	{
-		for( AFrameOutput * output : this->pImpl->frameOutputs )
+		for( FrameOutput::AFrameOutput * output : this->pImpl->frameOutputs )
 		output->outputFrame( this->frame );
 	}
 
 	if( this->isCalibrating() )
 	{
 		//TODO: as soon as there are multiple ways for calibrating, move the calibration logic to an external module/class
-		if( AAutoUnprojector * autoUnprojector = dynamic_cast<AAutoUnprojector*>( &(this->unprojector) ) )
+		if( Unprojector::AAutoUnprojector * autoUnprojector = dynamic_cast<Unprojector::AAutoUnprojector*>( &(this->unprojector) ) )
 		{
 			bool result = autoUnprojector->calibrate( this->frame );
 			this->pImpl->endCalibration( result );
@@ -169,7 +169,7 @@ void Processor::processFrame()
 
 		if( this->pImpl->pointOutputEnabled )
 		{
-			for( APointOutput * output : this->pImpl->pointOutputs )
+			for( PointOutput::APointOutput * output : this->pImpl->pointOutputs )
 				output->outputPoints( this->pointArray );
 		}
 	}
@@ -223,25 +223,25 @@ bool Processor::isCalibrationSucceeded() const
 }
 
 
-bool Processor::addFrameOutput( AFrameOutput * output )
+bool Processor::addFrameOutput( FrameOutput::AFrameOutput * output )
 {
 	return this->pImpl->frameOutputs.insert( output ).second;
 }
 
 
-bool Processor::removeFrameOutput( AFrameOutput * output )
+bool Processor::removeFrameOutput( FrameOutput::AFrameOutput * output )
 {
 	return this->pImpl->frameOutputs.erase( output );
 }
 
 
-bool Processor::addPointOutput( APointOutput * output )
+bool Processor::addPointOutput( PointOutput::APointOutput * output )
 {
 	return this->pImpl->pointOutputs.insert( output ).second;
 }
 
 
-bool Processor::removePointOutput( APointOutput * output )
+bool Processor::removePointOutput( PointOutput::APointOutput * output )
 {
 	return this->pImpl->pointOutputs.erase( output );
 }
@@ -271,13 +271,13 @@ bool Processor::isPointOutputEnabled() const
 }
 
 
-void Processor::setPointFilter( APointFilter * pointFilter )
+void Processor::setPointFilter( PointFilter::APointFilter * pointFilter )
 {
 	this->pImpl->filter = pointFilter;
 }
 
 
-APointFilter * Processor::getPointFilter() const
+PointFilter::APointFilter * Processor::getPointFilter() const
 {
 	return this->pImpl->filter;
 }

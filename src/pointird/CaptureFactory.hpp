@@ -27,7 +27,11 @@
 
 
 class Processor;
-class ACapture;
+
+namespace Capture
+{
+	class ACapture;
+}
 
 
 class CaptureFactory
@@ -36,7 +40,7 @@ public:
 	CaptureFactory();
 	~CaptureFactory();
 
-	ACapture * newCapture( const std::string name ) const;
+	Capture::ACapture * newCapture( const std::string name ) const;
 
 	std::vector< std::string > getAvailableCaptureNames() const;
 

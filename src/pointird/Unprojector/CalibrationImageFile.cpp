@@ -32,6 +32,9 @@
 #include <sys/types.h>
 
 
+using namespace Unprojector;
+
+
 // the default directory
 std::string CalibrationImageFile::directory;
 

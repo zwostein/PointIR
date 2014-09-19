@@ -24,13 +24,16 @@
 #include <string>
 
 
+namespace Unprojector
+{
+
 class AAutoUnprojector;
 
 
 class CalibrationImageFile
 {
 public:
-	CalibrationImageFile( AAutoUnprojector & unprojector, unsigned int width, unsigned int height );
+	CalibrationImageFile( Unprojector::AAutoUnprojector & unprojector, unsigned int width, unsigned int height );
 	~CalibrationImageFile();
 
 	std::string getFilename() const { return this->filename; }
@@ -42,11 +45,13 @@ public:
 private:
 	static std::string directory;
 
-	AAutoUnprojector & unprojector;
+	Unprojector::AAutoUnprojector & unprojector;
 	unsigned int width = 256;
 	unsigned int height = 256;
 	std::string filename;
 };
+
+}
 
 
 #endif

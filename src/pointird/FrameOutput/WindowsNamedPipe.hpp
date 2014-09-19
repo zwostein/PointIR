@@ -30,7 +30,6 @@
 namespace FrameOutput
 {
 
-
 class WindowsNamedPipe : public AFrameOutput
 {
 public:

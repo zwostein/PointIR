@@ -80,7 +80,7 @@ public:
 	typedef std::map< std::string, MethodMap > InterfaceMap;
 
 	Processor & processor;
-	CalibrationDataFile calibrationDataFile;
+	Unprojector::CalibrationDataFile calibrationDataFile;
 	DBusError error;
 	DBusConnection * connection = nullptr;
 	InterfaceMap interfaceMap;
@@ -94,12 +94,12 @@ public:
 
 		MethodMap unprojectorMethods;
 		unprojectorMethods.insert( { "saveCalibrationData", std::bind( &Impl::get< bool >, this, Getter< bool >(
-			std::bind( static_cast<bool(CalibrationDataFile::*)(void)>(&CalibrationDataFile::save), &calibrationDataFile ) ),
+			std::bind( static_cast<bool(Unprojector::CalibrationDataFile::*)(void)>(&Unprojector::CalibrationDataFile::save), &calibrationDataFile ) ),
 			_1, _2 ) } );
 		unprojectorMethods.insert( { "loadCalibrationData", std::bind( &Impl::get< bool >, this, Getter< bool >(
-			std::bind( static_cast<bool(CalibrationDataFile::*)(void)>(&CalibrationDataFile::load), &calibrationDataFile ) ),
+			std::bind( static_cast<bool(Unprojector::CalibrationDataFile::*)(void)>(&Unprojector::CalibrationDataFile::load), &calibrationDataFile ) ),
 			_1, _2 ) } );
-		if( dynamic_cast<AAutoUnprojector*>( &(processor.getUnprojector()) ) )
+		if( dynamic_cast<Unprojector::AAutoUnprojector*>( &(processor.getUnprojector()) ) )
 		{
 			unprojectorMethods.insert( { "generateCalibrationImageFile",
 				std::bind( &Impl::generateCalibrationImageFile, this,
@@ -168,8 +168,8 @@ public:
 		unsigned int height = value.u32;
 
 		// execute method
-		AAutoUnprojector & autoUnprojector = dynamic_cast<AAutoUnprojector&>( this->processor.getUnprojector() );
-		CalibrationImageFile calibrationImageFile( autoUnprojector, width, height );
+		Unprojector::AAutoUnprojector & autoUnprojector = dynamic_cast<Unprojector::AAutoUnprojector&>( this->processor.getUnprojector() );
+		Unprojector::CalibrationImageFile calibrationImageFile( autoUnprojector, width, height );
 		calibrationImageFile.generate();
 
 		std::string fileName = calibrationImageFile.getFilename();

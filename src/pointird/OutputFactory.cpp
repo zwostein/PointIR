@@ -50,8 +50,8 @@
 class OutputFactory::Impl
 {
 public:
-	typedef std::function< APointOutput*(void) > PointOutputCreator;
-	typedef std::function< AFrameOutput*(void) > FrameOutputCreator;
+	typedef std::function< PointOutput::APointOutput*(void) > PointOutputCreator;
+	typedef std::function< FrameOutput::AFrameOutput*(void) > FrameOutputCreator;
 	typedef std::map< std::string, PointOutputCreator > PointOutputMap;
 	typedef std::map< std::string, FrameOutputCreator > FrameOutputMap;
 
@@ -82,7 +82,7 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 		{ return new PointOutput::Win8TouchInjection; }
 	} );
 #endif
-	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> APointOutput *
+	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> PointOutput::APointOutput *
 		{
 			if( this->processor )
 				return new PointOutput::DebugOpenCV( *(this->processor) );
@@ -104,22 +104,22 @@ OutputFactory::~OutputFactory()
 }
 
 
-APointOutput * OutputFactory::newPointOutput( const std::string name ) const
+PointOutput::APointOutput * OutputFactory::newPointOutput( const std::string name ) const
 {
 	Impl::PointOutputMap::const_iterator it = this->pImpl->pointOutputMap.find( name );
 	if( it == this->pImpl->pointOutputMap.end() )
 		return nullptr;
-	APointOutput * output = it->second();
+	PointOutput::APointOutput * output = it->second();
 	return output;
 }
 
 
-AFrameOutput * OutputFactory::newFrameOutput( const std::string name ) const
+FrameOutput::AFrameOutput * OutputFactory::newFrameOutput( const std::string name ) const
 {
 	Impl::FrameOutputMap::const_iterator it = this->pImpl->frameOutputMap.find( name );
 	if( it == this->pImpl->frameOutputMap.end() )
 		return nullptr;
-	AFrameOutput * output = it->second();
+	FrameOutput::AFrameOutput * output = it->second();
 	return output;
 }
 
