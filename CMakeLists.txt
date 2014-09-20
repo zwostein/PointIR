@@ -188,15 +188,21 @@ endif()
 ################################################################
 # Packaging
 
+#set( CPACK_PACKAGE_VERSION_MAJOR "0" )
+#set( CPACK_PACKAGE_VERSION_MINOR "1" )
+# TODO: this should be updated at build time - not only when configuring
+# Only works on newer CMake versions:
+#string( TIMESTAMP CPACK_PACKAGE_VERSION_PATCH "%Y%m%d" )
+
+set( CPACK_PACKAGE_VERSION "snapshot" )
+
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "PointIR - Captures a video stream, detects markers, and generates multi-touch input." )
 set( CPACK_PACKAGE_CONTACT "Tobias Himmer <provisorisch@online.de>" )
 set( CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md" )
+
 set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt" )
 
-set( CPACK_PACKAGE_VERSION_MAJOR "0" )
-set( CPACK_PACKAGE_VERSION_MINOR "1" )
-# TODO: this should be updated at build time - not only when configuring
-string( TIMESTAMP CPACK_PACKAGE_VERSION_PATCH "%Y%m%d" )
+set( CPACK_SOURCE_IGNORE_FILES "/\\\\..*$;~$;/build.*/;${CPACK_SOURCE_IGNORE_FILES}" )
 
 # TODO:
 #set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)" )
