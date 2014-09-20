@@ -290,6 +290,7 @@ int main( int argc, char ** argv )
 	////////////////////////////////////////////////////////////////
 	// SDL2 init
 
+	//SDL_LogSetAllPriority( SDL_LOG_PRIORITY_DEBUG );
 	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_EVENTS );
 
 	SDL_Window * window = SDL_CreateWindow(

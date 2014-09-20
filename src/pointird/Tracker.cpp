@@ -111,7 +111,7 @@ Tracker::Tracker() : pImpl(new Impl)
 
 Tracker::Tracker( unsigned int maxID ) : pImpl(new Impl)
 {
-	if( maxID <= std::numeric_limits<int>::max() )
+	if( maxID <= (unsigned int)std::numeric_limits<int>::max() )
 		this->pImpl->maxID = maxID;
 }
 

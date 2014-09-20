@@ -24,6 +24,7 @@
 #include "APointOutput.hpp"
 
 #include <memory>
+#include <string>
 
 
 namespace PointOutput

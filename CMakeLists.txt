@@ -194,7 +194,7 @@ endif()
 # Only works on newer CMake versions:
 #string( TIMESTAMP CPACK_PACKAGE_VERSION_PATCH "%Y%m%d" )
 
-set( CPACK_PACKAGE_VERSION "snapshot" )
+set( CPACK_PACKAGE_VERSION "0.1-snapshot" )
 
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "PointIR - Captures a video stream, detects markers, and generates multi-touch input." )
 set( CPACK_PACKAGE_CONTACT "Tobias Himmer <provisorisch@online.de>" )
@@ -204,8 +204,11 @@ set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt" )
 
 set( CPACK_SOURCE_IGNORE_FILES "/\\\\..*$;~$;/build.*/;${CPACK_SOURCE_IGNORE_FILES}" )
 
-# TODO:
-#set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)" )
+set( CPACK_DEBIAN_PACKAGE_DEPENDS "libdbus-1-3, libopencv-core2.4 (>= 2.4.1), libstdc++6 (>= 4.8.2)" )
+if( POINTIR_TUIO )
+	set( CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, liblo7" )
+endif()
+
 set( CPACK_DEBIAN_PACKAGE_SECTION util )
 
 include( CPack )
