@@ -131,22 +131,28 @@ if( WIN32 )
 	target_link_libraries( ${POINTIR_EXECUTABLE_NAME} winmm imm32 version iphlpapi ws2_32 tiff lzma IlmImf z )
 endif()
 
+install( TARGETS ${POINTIR_EXECUTABLE_NAME} RUNTIME DESTINATION bin )
+install( DIRECTORY include/ DESTINATION include )
+
 ################################################################
 
 
 ################################################################
 # Optional executables
 
-option( POINTIR_BUILD_EXAMPLES "Builds example programs for testing" OFF )
-option( POINTIR_BUILD_TOOLS "Builds tools for calibration etc" ON )
+option( POINTIR_BUILD_EXAMPLES "Build example programs for testing" OFF )
+option( POINTIR_BUILD_TOOLS "Build tools for calibration etc" ON )
 
 if( POINTIR_BUILD_EXAMPLES OR POINTIR_BUILD_TOOLS )
-	option( POINTIR_USE_SYSTEM_SDL2 "Use system SDL2 installation" OFF )
+	option( POINTIR_USE_SYSTEM_SDL2 "Use system SDL2 installation" ON )
 	if( NOT POINTIR_USE_SYSTEM_SDL2 )
+		# TODO: find a way to disable install targets
+		set( SDL_SHARED FALSE CACHE BOOL "Build a shared version of the library" )
 		add_subdirectory( "external/SDL2" )
 		include_directories( "${CMAKE_SOURCE_DIR}/external/SDL2/include" )
 		set( SDL2_LIBRARY SDL2-static )
-		if( NEED_MAIN_WRAP )
+		# wrap the main function for those OSes
+		if( ${CMAKE_SYSTEM_NAME} MATCHES "^Windows$|^Android$|^Darwin$" )
 			list( APPEND ${SDL2_LIBRARY} SDL2main )
 		endif()
 	else()
@@ -173,6 +179,29 @@ if( POINTIR_BUILD_TOOLS )
 	if( WIN32 )
 		target_link_libraries( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} winmm dxguid imm32 version iphlpapi ws2_32 )
 	endif()
+	install( TARGETS ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} RUNTIME DESTINATION bin )
 endif()
+
+################################################################
+
+
+################################################################
+# Packaging
+
+set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "PointIR - Captures a video stream, detects markers, and generates multi-touch input." )
+set( CPACK_PACKAGE_CONTACT "Tobias Himmer <provisorisch@online.de>" )
+set( CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md" )
+set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt" )
+
+set( CPACK_PACKAGE_VERSION_MAJOR "0" )
+set( CPACK_PACKAGE_VERSION_MINOR "1" )
+# TODO: this should be updated at build time - not only when configuring
+string( TIMESTAMP CPACK_PACKAGE_VERSION_PATCH "%Y%m%d" )
+
+# TODO:
+#set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)" )
+set( CPACK_DEBIAN_PACKAGE_SECTION util )
+
+include( CPack )
 
 ################################################################
