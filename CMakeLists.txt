@@ -133,7 +133,12 @@ endif()
 
 install( TARGETS ${POINTIR_EXECUTABLE_NAME} RUNTIME DESTINATION bin )
 install( DIRECTORY include/ DESTINATION include )
-
+if( UNIX )
+	install( DIRECTORY etc/ DESTINATION share/PointIR/ExampleConfiguration/etc )
+endif()
+if( WIN32 )
+	install( DIRECTORY etc.windows/ DESTINATION ExampleConfiguration )
+endif()
 ################################################################
 
 
