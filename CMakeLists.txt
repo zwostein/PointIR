@@ -178,7 +178,7 @@ endif()
 
 if( POINTIR_BUILD_TOOLS )
 	set( POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR "pointir_calibrate_SDL2" )
-	add_executable( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} src/tool/SDL2Calibrator.cpp src/lodepng.cpp )
+	add_executable( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} src/tool/SDL2Calibrator.cpp src/VideoSocketClient.cpp src/DBusClient.cpp src/lodepng.cpp )
 	target_link_libraries( ${POINTIR_EXECUTABLE_NAME_TOOL_SDL2CALIBRATOR} ${SDL2_LIBRARY} ${DBUS_LIBRARIES} )
 	# HACK:
 	if( WIN32 )

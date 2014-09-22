@@ -17,24 +17,17 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <PointIR/Frame.h>
+#include "VideoSocketClient.hpp"
+#include "DBusClient.hpp"
+#include "lodepng.h"
 
 #include <SDL.h>
-#include <dbus/dbus.h>
-
-#include <lodepng.h>
 
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <malloc.h>
 #include <fcntl.h>
-
-#ifdef __unix__
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <sys/un.h>
-#endif
 
 #include <iostream>
 #include <map>
@@ -50,109 +43,57 @@
 	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
 
 
-constexpr static const char * dBusName = "PointIR.Calibrator";
-constexpr static const char * dBusControllerName = "PointIR.Controller";
-constexpr static const char * dBusControllerObject = "/PointIR/Controller";
+static PointIR::VideoSocketClient video;
 
-constexpr static const char * videoSocketName = "/tmp/PointIR.video.socket";
-
-
-static SDL_Texture * receiveFrame( SDL_Renderer * renderer, int socketFD )
+static SDL_Texture * receiveFrame( SDL_Renderer * renderer )
 {
 	static SDL_Texture * videoTexture = nullptr;
-#ifdef __unix__
-	static size_t bufferSize = sizeof(PointIR_Frame);
-	static PointIR_Frame * buffer = (PointIR_Frame *) calloc( 1, bufferSize );
-	ssize_t received;
+	static PointIR::Frame frame;
 
-	// peek at the next packet - return last frame if nothing received
-	PointIR_Frame peek;
-	received = recv( socketFD, &peek, sizeof(peek), MSG_PEEK );
-	if( -1 == received )
+	if( !video.receiveFrame( frame ) )
+		return videoTexture;
+
+	if( !frame.getWidth() || !frame.getHeight() )
+		return videoTexture;
+
+	// create or resize texture if needed
+	if( !videoTexture )
 	{
-		if( EAGAIN == errno || EWOULDBLOCK == errno )
-			return videoTexture;
-		else
-			throw SYSTEM_ERROR( errno, "recv" );
+		videoTexture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, frame.getWidth(), frame.getHeight() );
 	}
-	if( sizeof(peek) != received )
-		throw RUNTIME_ERROR( "too few data received" );
-
-	// resize packet buffer and texture if needed
-	if( peek.width != buffer->width || peek.height != buffer->height )
+	else
 	{
-		buffer->width = peek.width;
-		buffer->height = peek.height;
-		if( videoTexture )
+		int textureWidth = 0, textureHeight = 0;
+		SDL_QueryTexture( videoTexture, nullptr, nullptr, &textureWidth, &textureHeight );
+		if( textureWidth != (int)frame.getWidth() || textureHeight != (int)frame.getHeight() )
+		{
 			SDL_DestroyTexture( videoTexture );
-		videoTexture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, buffer->width, buffer->height );
-		bufferSize = sizeof(PointIR_Frame) + buffer->width * buffer->height;
-		buffer = (PointIR_Frame *) realloc( buffer, bufferSize );
-		if( !buffer )
-			throw SYSTEM_ERROR( errno, "realloc" );
-		std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized to "<<buffer->width<<"x"<< buffer->height<<"\n";
+			videoTexture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, frame.getWidth(), frame.getHeight() );
+			std::cerr << std::string(__PRETTY_FUNCTION__) << ": resized to "<< frame.getWidth() << "x" << frame.getHeight() << "\n";
+		}
 	}
-
-	// receive the packet
-	received = recv( socketFD, buffer, bufferSize, 0 );
-	if( -1 == received )
-		throw SYSTEM_ERROR( errno, "recv" );
-	if( bufferSize != (size_t)received )
-		throw RUNTIME_ERROR( "too few data received" );
 
 	// SDL only supports 3/4 component images !? need to convert here
-	size_t frameSize = buffer->width * buffer->height;
+	size_t frameSize = frame.size();
 	std::vector< uint8_t > frame3( frameSize * 3 );
 	for( unsigned int i = 0; i < frameSize; i++ )
 	{
-		frame3[i*3] = buffer->data[i];
-		frame3[i*3+1] = buffer->data[i];
-		frame3[i*3+2] = buffer->data[i];
+		frame3[i*3] = frame[i];
+		frame3[i*3+1] = frame[i];
+		frame3[i*3+2] = frame[i];
 	}
 
-	SDL_UpdateTexture( videoTexture, nullptr, frame3.data(), buffer->width * 3 );
-#endif
+	SDL_UpdateTexture( videoTexture, nullptr, frame3.data(), frame.getWidth() * 3 );
+
 	return videoTexture;
 }
 
 
-static SDL_Texture * loadCalibrationImage( SDL_Renderer * renderer, unsigned int width, unsigned int height, DBusConnection * dBusConnection )
+static PointIR::DBusClient dbus;
+
+static SDL_Texture * loadCalibrationImage( SDL_Renderer * renderer, unsigned int width, unsigned int height )
 {
-	DBusMessage * msg = dbus_message_new_method_call(
-		dBusControllerName,               // target for the method call
-		dBusControllerObject,             // object to call on
-		"PointIR.Controller.Unprojector", // interface to call on
-		"generateCalibrationImageFile"    // method name
-	);
-	if( !msg )
-		throw RUNTIME_ERROR( "dbus_message_new_method_call failed" );
-
-	// append arguments
-	DBusMessageIter args;
-	dbus_message_iter_init_append( msg, &args );
-
-	DBusBasicValue value;
-	value.u32 = width;
-	if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_UINT32, &value ) )
-		throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
-	value.u32 = height;
-	if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_UINT32, &value ) )
-		throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
-
-	// send message and get a handle for a reply
-	DBusError dBusError;
-	dbus_error_init( &dBusError );
-	DBusMessage * reply = dbus_connection_send_with_reply_and_block( dBusConnection, msg, -1, &dBusError ); // -1 is default timeout
-	if( !reply )
-		throw RUNTIME_ERROR( "dbus_connection_send_with_reply_and_block failed: " + std::string(dBusError.message) );
-
-	// handle arguments in reply
-	if( !dbus_message_iter_init( reply, &args ) )
-		throw RUNTIME_ERROR( "Expected one argument in reply" );
-	if( dbus_message_iter_get_arg_type( &args ) != DBUS_TYPE_STRING )
-		throw RUNTIME_ERROR( "Expected argument of type string" );
-	dbus_message_iter_get_basic( &args, &value );
-	std::string filename( value.str );
+	std::string filename = dbus.getCalibrationImageFile( width, height );
 
 	std::vector< uint8_t > image;
 	unsigned int loadedWidth = 0;
@@ -162,10 +103,6 @@ static SDL_Texture * loadCalibrationImage( SDL_Renderer * renderer, unsigned int
 		throw RUNTIME_ERROR( "LodePNG encode error " + std::to_string(error) + ": " + lodepng_error_text(error) );
 	if( loadedWidth != width || loadedHeight != height )
 		throw RUNTIME_ERROR( "PointIR daemon generated a calibration image of different size" );
-
-	// free messages
-	dbus_message_unref(msg);
-	dbus_message_unref(reply);
 
 	// SDL only supports 3/4 component images !? need to convert here
 	std::vector< uint8_t > image3( image.size() * 3 );
@@ -184,109 +121,8 @@ static SDL_Texture * loadCalibrationImage( SDL_Renderer * renderer, unsigned int
 }
 
 
-static bool dBusGetBool( DBusConnection * dBusConnection, const std::string & interface, const std::string & method )
-{
-	DBusMessage * msg = dbus_message_new_method_call(
-		dBusControllerName,    // target for the method call
-		dBusControllerObject, // object to call on
-		interface.c_str(),   // interface to call on
-		method.c_str()      // method name
-	);
-	if( !msg )
-		throw RUNTIME_ERROR( "dbus_message_new_method_call failed" );
-
-	// append arguments
-	DBusMessageIter args;
-	dbus_message_iter_init_append( msg, &args );
-
-	// send message and get a handle for a reply
-	DBusError dBusError;
-	dbus_error_init( &dBusError );
-	DBusMessage * reply = dbus_connection_send_with_reply_and_block( dBusConnection, msg, -1, &dBusError ); // -1 is default timeout
-	if( !reply )
-		throw RUNTIME_ERROR( "dbus_connection_send_with_reply_and_block failed: " + std::string(dBusError.message) );
-
-	// handle arguments in reply
-	DBusBasicValue value;
-	if( !dbus_message_iter_init( reply, &args ) )
-		throw RUNTIME_ERROR( "Expected one argument in reply" );
-	if( dbus_message_iter_get_arg_type( &args ) != DBUS_TYPE_BOOLEAN )
-		throw RUNTIME_ERROR( "Expected argument of type bool" );
-	dbus_message_iter_get_basic( &args, &value );
-	bool result = value.bool_val;
-
-	// free messages
-	dbus_message_unref(msg);
-	dbus_message_unref(reply);
-
-	return result;
-}
-
-
 int main( int argc, char ** argv )
 {
-	////////////////////////////////////////////////////////////////
-	// DBus init
-
-	DBusError dBusError;
-	dbus_error_init( &dBusError );
-	DBusConnection * dBusConnection = nullptr;
-	try
-	{
-		dBusConnection = dbus_bus_get( DBUS_BUS_SYSTEM, &(dBusError) );
-		if( dbus_error_is_set( &dBusError ) )
-			throw RUNTIME_ERROR( "Connection Error: " + std::string(dBusError.message) );
-		if( !dBusConnection )
-			throw RUNTIME_ERROR( "Could not connect to system DBus" );
-
-		int ret = dbus_bus_request_name(
-			dBusConnection,
-			dBusName,
-			0,
-			&dBusError
-		);
-		if( dbus_error_is_set( &dBusError ) )
-			throw RUNTIME_ERROR( "Name Error: " + std::string(dBusError.message) );
-		if( DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret )
-			throw RUNTIME_ERROR( "Could not request name on system DBus" );
-	} catch( ... )
-	{
-		// uninitialise dbus and rethrow exception
-		if( dBusConnection )
-			dbus_connection_unref( dBusConnection );
-		dbus_error_free( &dBusError );
-		throw;
-	}
-
-	////////////////////////////////////////////////////////////////
-
-#ifdef __unix__
-	////////////////////////////////////////////////////////////////
-	// video socket init
-
-	int videoFD = socket( AF_UNIX, SOCK_SEQPACKET, 0 );
-	if( -1 == videoFD )
-		throw SYSTEM_ERROR( errno, "socket" );
-
-	// set local socket nonblocking
-	int flags = fcntl( videoFD, F_GETFL, 0 );
-	if( -1 == flags )
-		throw SYSTEM_ERROR( errno, "fcntl" );
-	if( -1 == fcntl( videoFD, F_SETFL, flags | O_NONBLOCK ) )
-		throw SYSTEM_ERROR( errno, "fcntl" );
-
-	struct sockaddr_un remoteAddr;
-	remoteAddr.sun_family = AF_UNIX;
-	strcpy( remoteAddr.sun_path, videoSocketName );
-	size_t len = strlen(remoteAddr.sun_path) + sizeof(remoteAddr.sun_family);
-	if( -1 == connect( videoFD, (struct sockaddr *)&remoteAddr, len ) )
-		throw SYSTEM_ERROR( errno, "connect" );
-
-	////////////////////////////////////////////////////////////////
-#else
-	int videoFD = -1;
-#endif
-
 	////////////////////////////////////////////////////////////////
 	// SDL2 init
 
@@ -327,7 +163,7 @@ int main( int argc, char ** argv )
 	// retrieve calibration image of the same size as our fullscreen window
 	int w = 0, h = 0;
 	SDL_GetWindowSize( window, &w, &h );
-	SDL_Texture * calibrationImageTexture = loadCalibrationImage( renderer, w, h, dBusConnection );
+	SDL_Texture * calibrationImageTexture = loadCalibrationImage( renderer, w, h );
 
 	struct Touch
 	{
@@ -415,10 +251,10 @@ int main( int argc, char ** argv )
 			calibrate = false;
 			SDL_RenderCopy( renderer, calibrationImageTexture, nullptr, nullptr );
 			SDL_RenderPresent( renderer );
-			if( dBusGetBool( dBusConnection, "PointIR.Controller.Processor", "calibrate" ) )
+			if( dbus.calibrate() )
 			{
 				std::cout << "Calibration succeeded :)\n";
-				dBusGetBool( dBusConnection, "PointIR.Controller.Unprojector", "saveCalibrationData" );
+				dbus.saveCalibrationData();
 			}
 			else
 			{
@@ -426,7 +262,7 @@ int main( int argc, char ** argv )
 			}
 		}
 
-		videoTexture = receiveFrame( renderer, videoFD );
+		videoTexture = receiveFrame( renderer );
 		if( videoTexture )
 			SDL_RenderCopy( renderer, videoTexture, nullptr, nullptr );
 
@@ -452,14 +288,6 @@ int main( int argc, char ** argv )
 	SDL_DestroyRenderer( renderer );
 	SDL_DestroyWindow( window );
 	SDL_Quit();
-	////////////////////////////////////////////////////////////////
-
-
-	////////////////////////////////////////////////////////////////
-	// DBus shutdown
-	if( dBusConnection )
-		dbus_connection_unref( dBusConnection );
-	dbus_error_free( &dBusError );
 	////////////////////////////////////////////////////////////////
 
 	return 0;

@@ -90,6 +90,7 @@ namespace PointIR
 		Point *       getPoints()       noexcept { return pointArray->points; }
 
 		explicit operator const PointIR_PointArray*() const noexcept { return pointArray; }
+		explicit operator PointIR_PointArray*() noexcept { return pointArray; }
 
 		void resizeIfNeeded( CountType newCount )
 		{
