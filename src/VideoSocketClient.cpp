@@ -25,7 +25,7 @@
 using namespace PointIR;
 VideoSocketClient::VideoSocketClient( const std::string & socketName ) {}
 VideoSocketClient::~VideoSocketClient() {}
-bool VideoSocketClient::receiveFrame( Frame & frame ) { return false; }
+bool VideoSocketClient::receiveFrame( Frame & frame ) const { return false; }
 #else
 
 
