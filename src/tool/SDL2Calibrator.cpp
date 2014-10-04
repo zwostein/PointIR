@@ -22,6 +22,7 @@
 #include "lodepng.h"
 
 #include <SDL.h>
+#include <tclap/CmdLine.h>
 
 #include <stdint.h>
 #include <unistd.h>
@@ -35,6 +36,9 @@
 #include <stdexcept>
 #include <system_error>
 
+#include "image/important.c"
+#include "image/success.c"
+
 
 #define SYSTEM_ERROR( errornumber, whattext ) \
 	std::system_error( (errornumber), std::system_category(), std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
@@ -43,14 +47,21 @@
 	std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (whattext) )
 
 
-static PointIR::VideoSocketClient video;
+static const char * notice =
+	"PointIR SDL2 Calibrator (compiled " __TIME__ ", " __DATE__ ")\n"
+	"This program can be used to calibrate and test the PointIR Daemon.\n"
+	"Copyright 2014 Tobias Himmer <provisorisch@online.de>";
 
-static SDL_Texture * receiveFrame( SDL_Renderer * renderer )
+
+static SDL_Texture * receiveFrame( const PointIR::VideoSocketClient * video, SDL_Renderer * renderer )
 {
+	if( !video )
+		return nullptr;
+
 	static SDL_Texture * videoTexture = nullptr;
 	static PointIR::Frame frame;
 
-	if( !video.receiveFrame( frame ) )
+	if( !video->receiveFrame( frame ) )
 		return videoTexture;
 
 	if( !frame.getWidth() || !frame.getHeight() )
@@ -89,11 +100,12 @@ static SDL_Texture * receiveFrame( SDL_Renderer * renderer )
 }
 
 
-static PointIR::DBusClient dbus;
-
-static SDL_Texture * loadCalibrationImage( SDL_Renderer * renderer, unsigned int width, unsigned int height )
+static SDL_Texture * loadCalibrationImage( const PointIR::DBusClient * dbus, SDL_Renderer * renderer, unsigned int width, unsigned int height )
 {
-	std::string filename = dbus.getCalibrationImageFile( width, height );
+	if( !dbus )
+		return nullptr;
+
+	std::string filename = dbus->getCalibrationImageFile( width, height );
 
 	std::vector< uint8_t > image;
 	unsigned int loadedWidth = 0;
@@ -121,8 +133,83 @@ static SDL_Texture * loadCalibrationImage( SDL_Renderer * renderer, unsigned int
 }
 
 
+static SDL_Texture * loadImage( SDL_Renderer * renderer, unsigned int width, unsigned int height, const unsigned char * data )
+{
+	SDL_Texture * texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC, width, height );
+	SDL_UpdateTexture( texture, nullptr, data, width * 4 );
+	return texture;
+}
+
+
 int main( int argc, char ** argv )
 {
+	struct Touch
+	{
+		SDL_Point point;
+		uint8_t r;
+		uint8_t g;
+		uint8_t b;
+	};
+	std::map< int64_t, Touch > touches;
+
+	float noticeFade = 0.0f;
+	SDL_Texture * noticeTexture = nullptr;
+	SDL_Texture * videoTexture = nullptr;
+
+	bool quick = false;
+
+	int ret = 0;
+
+
+	////////////////////////////////////////////////////////////////
+	// process command line options
+	try
+	{
+		TCLAP::CmdLine cmd(
+			notice,
+		     ' ',     // delimiter
+		     __DATE__ // version
+		);
+
+		TCLAP::SwitchArg quickCalibrationArg(
+			"q", "quick",
+			"Causes a quick calibration and exits. If the process returns 0, the calibration succeeded.",
+			cmd, false );
+
+		cmd.parse( argc, argv );
+
+		quick = quickCalibrationArg.getValue();
+	}
+	catch( TCLAP::ArgException & e )
+	{
+		std::cerr << "Command line error: \"" << e.error() << "\" for arg \"" << e.argId() << "\"\n";
+		return 1;
+	}
+
+	////////////////////////////////////////////////////////////////
+
+
+	////////////////////////////////////////////////////////////////
+	// PointIR init
+
+	PointIR::VideoSocketClient * video = nullptr;
+	if( !quick )
+	{
+		try
+		{
+			video = new PointIR::VideoSocketClient;
+		}
+		catch( std::exception & ex )
+		{
+			std::cerr << std::string(__PRETTY_FUNCTION__) << std::string(": video stream unavailable - ignoring exception: ") << ex.what() << "\n";
+		}
+	}
+
+	PointIR::DBusClient * dbus = new PointIR::DBusClient;
+
+	////////////////////////////////////////////////////////////////
+
+
 	////////////////////////////////////////////////////////////////
 	// SDL2 init
 
@@ -158,26 +245,35 @@ int main( int argc, char ** argv )
 
 
 	////////////////////////////////////////////////////////////////
-	// the main loop
+	// Textures
 
 	// retrieve calibration image of the same size as our fullscreen window
-	int w = 0, h = 0;
-	SDL_GetWindowSize( window, &w, &h );
-	SDL_Texture * calibrationImageTexture = loadCalibrationImage( renderer, w, h );
-
-	struct Touch
+	SDL_Texture * calibrationImageTexture = nullptr;
 	{
-		SDL_Point point;
-		uint8_t r;
-		uint8_t g;
-		uint8_t b;
-	};
-	std::map< int64_t, Touch > touches;
+		int w = 0, h = 0;
+		SDL_GetWindowSize( window, &w, &h );
+		calibrationImageTexture = loadCalibrationImage( dbus, renderer, w, h );
+	}
 
-	bool closeRequested = false;
-	bool calibrate = false;
-	SDL_Texture * videoTexture;
-	while( !closeRequested )
+	SDL_Texture * successTexture = nullptr;
+	SDL_Texture * errorTexture = nullptr;
+	if( !quick )
+	{
+		successTexture = loadImage( renderer, image_success.width, image_success.height, image_success.pixel_data );
+		errorTexture = loadImage( renderer, image_important.width, image_important.height, image_important.pixel_data );
+		SDL_SetTextureBlendMode( successTexture, SDL_BLENDMODE_BLEND );
+		SDL_SetTextureBlendMode( errorTexture, SDL_BLENDMODE_BLEND );
+	}
+
+	////////////////////////////////////////////////////////////////
+
+
+	////////////////////////////////////////////////////////////////
+	// the main loop
+
+	bool closeRequested = quick; // immediately exit after doing a quick calibration
+	bool calibrate = quick; // start calibration if doing a quick calibration
+	do
 	{
 		SDL_Event e;
 		while( SDL_PollEvent(&e) )
@@ -243,28 +339,40 @@ int main( int argc, char ** argv )
 			}
 		}
 
+		int w = 0, h = 0;
+		SDL_GetWindowSize( window, &w, &h );
+
 		SDL_SetRenderDrawColor( renderer, 0, 0, 0, 0 );
 		SDL_RenderClear( renderer );
 
-		if( calibrate )
+		if( calibrate && dbus )
 		{
 			calibrate = false;
 			SDL_RenderCopy( renderer, calibrationImageTexture, nullptr, nullptr );
 			SDL_RenderPresent( renderer );
-			if( dbus.calibrate() )
+			if( dbus->calibrate() )
 			{
 				std::cout << "Calibration succeeded :)\n";
-				dbus.saveCalibrationData();
+				noticeTexture = successTexture;
+				noticeFade = 1.0f;
+				dbus->saveCalibrationData();
+				ret = 0;
 			}
 			else
 			{
 				std::cout << "Calibration failed :(\n";
+				noticeTexture = errorTexture;
+				noticeFade = 1.0f;
+				ret = 1;
 			}
 		}
 
-		videoTexture = receiveFrame( renderer );
-		if( videoTexture )
-			SDL_RenderCopy( renderer, videoTexture, nullptr, nullptr );
+		if( video )
+		{
+			videoTexture = receiveFrame( video, renderer );
+			if( videoTexture )
+				SDL_RenderCopy( renderer, videoTexture, nullptr, nullptr );
+		}
 
 		for( auto & p : touches )
 		{
@@ -274,21 +382,42 @@ int main( int argc, char ** argv )
 			SDL_RenderDrawLine( renderer, touch.point.x, 0, touch.point.x, h );
 		}
 
+		if( noticeTexture && noticeFade > 0.0f )
+		{
+			SDL_Rect noticeDestRect;
+			noticeDestRect.w = h / 2;
+			noticeDestRect.h = h / 2;
+			noticeDestRect.x = (w - noticeDestRect.w) / 2;
+			noticeDestRect.y = (h - noticeDestRect.h) / 2;
+			SDL_SetTextureAlphaMod( noticeTexture, noticeFade*255.0f );
+			SDL_RenderCopy( renderer, noticeTexture, nullptr, &noticeDestRect );
+			noticeFade -= 0.01f;
+		}
+
 		SDL_RenderPresent( renderer );
-	}
-	if( videoTexture )
-		SDL_DestroyTexture( videoTexture );
+	} while( !closeRequested );
 
 	////////////////////////////////////////////////////////////////
 
 
 	////////////////////////////////////////////////////////////////
 	// SDL2 shutdown
-	SDL_DestroyTexture( calibrationImageTexture );
+
+	if( videoTexture )
+		SDL_DestroyTexture( videoTexture );
+	if( successTexture )
+		SDL_DestroyTexture( successTexture );
+	if( errorTexture )
+		SDL_DestroyTexture( errorTexture );
+	if( calibrationImageTexture )
+		SDL_DestroyTexture( calibrationImageTexture );
+
 	SDL_DestroyRenderer( renderer );
 	SDL_DestroyWindow( window );
+
 	SDL_Quit();
+
 	////////////////////////////////////////////////////////////////
 
-	return 0;
+	return ret;
 }
