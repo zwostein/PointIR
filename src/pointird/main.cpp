@@ -215,10 +215,13 @@ int main( int argc, char ** argv )
 			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.fps),
 			false, captureFactory.fps, "float", cmd );
 
+		std::vector< std::string > availableCaptureNames = captureFactory.getAvailableCaptureNames();
+		TCLAP::ValuesConstraint<std::string> capturesArgConstraint( availableCaptureNames );
+		std::string defaultCapturesAsArgument;
 		TCLAP::ValueArg<std::string> captureArg(
-			"", "capture",
+			"c", "capture",
 			"The capture module used to retrieve the video stream.\nDefaults to \"" + captureName + "\"",
-			false, captureName, "string", cmd );
+			false, captureName, &capturesArgConstraint, cmd );
 
 		std::vector< std::string > availableOutputNames = outputFactory.getAvailableOutputNames();
 		TCLAP::ValuesConstraint<std::string> outputsArgConstraint( availableOutputNames );
@@ -236,11 +239,11 @@ int main( int argc, char ** argv )
 		TCLAP::ValuesConstraint<std::string> controllersArgConstraint( availableControllerNames );
 		std::string defaultControllersAsArgument;
 		for( std::string & controller : controllerNames )
-			defaultControllersAsArgument += "-c " + controller + " ";
+			defaultControllersAsArgument += "-x " + controller + " ";
 		if( defaultControllersAsArgument.size() )
 			defaultControllersAsArgument.pop_back();
 		TCLAP::MultiArg<std::string> contollersArg(
-			"c",  "controller",
+			"x",  "controller",
 			"Adds one or more controller modules.\nSpecifying this will override the default (" + defaultControllersAsArgument + ")",
 			false, &controllersArgConstraint, cmd );
 

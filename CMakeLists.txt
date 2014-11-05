@@ -45,6 +45,12 @@ set( POINTIR_SOURCES
 	src/pointird/PointOutput/DebugOpenCV.cpp
 )
 
+option( POINTIR_PROCESSOR_BENCHMARK "Enable extra code to benchmark the Processor module - statistics are sent to stdout" OFF )
+mark_as_advanced( POINTIR_PROCESSOR_BENCHMARK )
+if( POINTIR_PROCESSOR_BENCHMARK )
+	add_definitions( -DPOINTIR_PROCESSOR_BENCHMARK )
+endif()
+
 option( POINTIR_UNIXDOMAINSOCKET "Enable use of Unix Domain Sockets for point output and video stream" ${UNIX} )
 option( POINTIR_UINPUT "Enable uinput API for multitouch device emulation output" ${LINUX} )
 option( POINTIR_V4L2 "Enable Video4Linux2 API for video capture" ${LINUX} )

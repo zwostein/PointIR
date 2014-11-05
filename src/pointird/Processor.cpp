@@ -17,6 +17,9 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//#define POINTIR_PROCESSOR_BENCHMARK
+
+
 #include "Processor.hpp"
 
 #include "Capture/ACapture.hpp"
@@ -33,6 +36,40 @@
 
 #include <iostream>
 #include <set>
+
+#ifdef POINTIR_PROCESSOR_BENCHMARK
+	#include <unistd.h>
+	#include <time.h>
+
+//	#define POINTIR_PROCESSOR_BENCHMARKCLOCKTYPE CLOCK_MONOTONIC
+	#ifndef POINTIR_PROCESSOR_BENCHMARKCLOCKTYPE
+		#define POINTIR_PROCESSOR_BENCHMARK_CLOCKTYPE CLOCK_PROCESS_CPUTIME_ID
+	#endif
+
+	static void timeStart( struct timespec & time )
+	{
+		clock_gettime( POINTIR_PROCESSOR_BENCHMARK_CLOCKTYPE, &time );
+	}
+	static void timeStop( const char * name, struct timespec & time )
+	{
+		struct timespec thisTime = {};
+		clock_gettime( POINTIR_PROCESSOR_BENCHMARK_CLOCKTYPE, &thisTime );
+		double elapsed_us = (thisTime.tv_sec - time.tv_sec)*1000000.0 + (thisTime.tv_nsec - time.tv_nsec)/1000.0;
+		printf( "%s: %f\n", name, elapsed_us );
+	}
+
+	#define TIME( variable ) struct timespec variable={}
+	#define TIMESTART( time ) timeStart( time )
+	#define TIMESTOP( name, time ) timeStop( name, time )
+	#define TIMEFRAMEBEGIN() printf( "--------Processor Benchmark Begin--------\n" )
+	#define TIMEFRAMEEND() printf( "--------Processor Benchmark End--------\n" )
+#else
+	#define TIME( variable )
+	#define TIMESTART( time )
+	#define TIMESTOP( name, time )
+	#define TIMEFRAMEBEGIN()
+	#define TIMEFRAMEEND()
+#endif
 
 
 class Processor::Impl
@@ -79,6 +116,7 @@ Processor::Processor( Capture::ACapture & capture, PointDetector::APointDetector
 	detector(detector),
 	unprojector(unprojector)
 {
+//	this->startCalibration();
 }
 
 
@@ -124,28 +162,44 @@ bool Processor::isProcessing() const
 
 void Processor::processFrame()
 {
+	TIMEFRAMEBEGIN();
+
+	TIME( total );
+	TIMESTART( total );
+
 	if( !this->isProcessing() )
 		return;
 
+	TIME( advanceFrame );
+	TIMESTART( advanceFrame );
 	if( !this->capture.advanceFrame() )
 	{
 		std::cerr << "Processor: Could not get next frame.\n";
 		return;
 	}
+	TIMESTOP( "advanceFrame", advanceFrame );
+	TIME( retrieveFrame );
+	TIMESTART( retrieveFrame );
 	if( !this->capture.retrieveFrame( this->frame ) )
 	{
 		std::cerr << "Processor: Could not retrieve frame.\n";
 		return;
 	}
+	TIMESTOP( "retrieveFrame", retrieveFrame );
 
+	TIME( outputFrame );
+	TIMESTART( outputFrame );
 	if( this->pImpl->frameOutputEnabled )
 	{
 		for( FrameOutput::AFrameOutput * output : this->pImpl->frameOutputs )
 		output->outputFrame( this->frame );
 	}
+	TIMESTOP( "outputFrame", outputFrame );
 
 	if( this->isCalibrating() )
 	{
+		TIME( calibration );
+		TIMESTART( calibration );
 		//TODO: as soon as there are multiple ways for calibrating, move the calibration logic to an external module/class
 		if( Unprojector::AAutoUnprojector * autoUnprojector = dynamic_cast<Unprojector::AAutoUnprojector*>( &(this->unprojector) ) )
 		{
@@ -157,22 +211,40 @@ void Processor::processFrame()
 			// no calibration supported
 			this->pImpl->endCalibration( false );
 		}
+		TIMESTOP( "calibration", calibration );
+
+		TIMESTOP( "total (calibration)", total );
 	}
 	else
 	{
+		TIME( detectPoints );
+		TIMESTART( detectPoints );
 		this->detector.detect( this->pointArray, this->frame );
+		TIMESTOP( "detectPoints", detectPoints );
 
+		TIME( unprojectPoints );
+		TIMESTART( unprojectPoints );
 		this->unprojector.unproject( this->pointArray );
+		TIMESTOP( "unprojectPoints", unprojectPoints );
 
+		TIME( filterPoints );
+		TIMESTART( filterPoints );
 		if( this->pImpl->filter )
 			this->pImpl->filter->filterPoints( this->pointArray );
+		TIMESTOP( "filterPoints", filterPoints );
 
+		TIME( outputPoints );
+		TIMESTART( outputPoints );
 		if( this->pImpl->pointOutputEnabled )
 		{
 			for( PointOutput::APointOutput * output : this->pImpl->pointOutputs )
 				output->outputPoints( this->pointArray );
 		}
+		TIMESTOP( "outputPoints", outputPoints );
+
+		TIMESTOP( "total", total );
 	}
+	TIMEFRAMEEND();
 }
 
 
