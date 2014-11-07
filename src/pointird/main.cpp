@@ -186,12 +186,12 @@ int main( int argc, char ** argv )
 		);
 
 		TCLAP::ValueArg<std::string> calibrationBeginHookArg(
-			"", "beginCalibHook",
+			"", "calibBeginHook",
 			"Script to execute when Calibration started.\nDefaults to \"" + calibrationHook.getBeginHook() + "\"",
 			false, calibrationHook.getBeginHook(), "string", cmd );
 
 		TCLAP::ValueArg<std::string> calibrationEndHookArg(
-			"", "endCalibHook",
+			"", "calibEndHook",
 			"Script to execute when Calibration finished. An additional argument is appended on execution, indicating whether the calibration succeeded (1 for success, 0 for failure).\nDefaults to \"" + calibrationHook.getEndHook() + "\"",
 			false, calibrationHook.getEndHook(), "string", cmd );
 
