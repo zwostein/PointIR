@@ -245,8 +245,8 @@ Video4Linux2::Video4Linux2( const std::string & device, unsigned int width, unsi
 
 	if( this->width != fmt.fmt.pix.width || this->height != fmt.fmt.pix.height )
 	{
-		std::cerr << "Capture::Video4Linux2: \"" << this->device << "\": " << "requested video of size " << this->width << "x" << this->height
-			<< " failed, using " << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height << "instead\n";
+		std::cerr << "Capture::Video4Linux2: \"" << this->device << "\": " << "request of size " << this->width << "x" << this->height
+			<< " failed, using " << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height << " instead\n";
 	}
 
 	this->width = fmt.fmt.pix.width;
