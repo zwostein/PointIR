@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Tracker.hpp"
+#include "Simple.hpp"
 
 #include <PointIR/Point.h>
 #include <PointIR/PointArray.h>
@@ -29,6 +29,9 @@
 #include <limits>
 
 #include <cassert>
+
+
+using namespace Tracker;
 
 
 template <typename T>
@@ -70,7 +73,7 @@ public:
 };
 
 
-class Tracker::Impl
+class Simple::Impl
 {
 public:
 	Matrix< PointIR::Point::Component > distancesCurrentPrevious;
@@ -104,25 +107,31 @@ public:
 };
 
 
-Tracker::Tracker() : pImpl(new Impl)
+Simple::Simple() : pImpl(new Impl)
 {
 }
 
 
-Tracker::Tracker( unsigned int maxID ) : pImpl(new Impl)
+Simple::Simple( unsigned int maxID ) : pImpl(new Impl)
 {
 	if( maxID <= (unsigned int)std::numeric_limits<int>::max() )
 		this->pImpl->maxID = maxID;
 }
 
 
-Tracker::~Tracker()
+Simple::~Simple()
 {
 }
 
 
+unsigned int Simple::getMaxID() const
+{
+	return this->pImpl->maxID;
+}
+
+
 //TODO: maybe use the Hungary Algorithm instead
-void Tracker::assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
+void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
                          const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
                          std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )
 {

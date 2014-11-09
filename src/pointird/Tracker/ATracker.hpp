@@ -17,36 +17,26 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _POINTOUTPUT_TUIO__INCLUDED_
-#define _POINTOUTPUT_TUIO__INCLUDED_
+#ifndef _ATRACKER__INCLUDED_
+#define _ATRACKER__INCLUDED_
 
 
-#include "APointOutput.hpp"
+#include <PointIR/PointArray.h>
 
-#include <memory>
-#include <string>
-
-
-class TrackerFactory;
+#include <vector>
 
 
-namespace PointOutput
+namespace Tracker
 {
 
-class TUIO : public APointOutput
+class ATracker
 {
 public:
-	TUIO( const TUIO & ) = delete; // disable copy constructor
-	TUIO & operator=( const TUIO & other ) = delete; // disable assignment operator
-
-	TUIO( const TrackerFactory & trackerFactory, std::string address = "osc.udp://127.0.0.1:3333" );
-	virtual ~TUIO();
-
-	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
-
-private:
-	class Impl;
-	std::unique_ptr< Impl > pImpl;
+	virtual ~ATracker() {};
+	virtual void assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
+	                        const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
+	                        std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious ) = 0;
+	virtual unsigned int getMaxID() const = 0;
 };
 
 }

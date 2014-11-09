@@ -20,7 +20,7 @@
 
 #include "TUIO.hpp"
 #include "../exceptions.hpp"
-#include "../Tracker.hpp"
+#include "../TrackerFactory.hpp"
 
 #include <PointIR/PointArray.h>
 
@@ -44,7 +44,7 @@ public:
 	uint32_t frameID = 0;
 	lo_timetag lastTimetag;
 
-	Tracker tracker;
+	Tracker::ATracker * tracker;
 	PointIR::PointArray previousPoints;
 	std::vector< int > previousIDs;
 	std::vector< int > currentIDs;
@@ -53,9 +53,11 @@ public:
 };
 
 
-TUIO::TUIO( std::string address ) :
+TUIO::TUIO( const TrackerFactory & trackerFactory, std::string address ) :
 	pImpl( new Impl )
 {
+	this->pImpl->tracker = trackerFactory.newTracker();
+
 	this->pImpl->tuioAddr = lo_address_new_from_url( address.c_str() );
 	if( !this->pImpl->tuioAddr )
 		throw RUNTIME_ERROR("Could not start OSC/TUIO server");
@@ -65,15 +67,18 @@ TUIO::TUIO( std::string address ) :
 
 TUIO::~TUIO()
 {
+	if( this->pImpl->tracker )
+		delete this->pImpl->tracker;
+
 	lo_address_free( this->pImpl->tuioAddr );
 }
 
 
 void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 {
-	this->pImpl->tracker.assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs,
-	                                currentPoints, this->pImpl->currentIDs,
-	                                this->pImpl->previousToCurrent, this->pImpl->currentToPrevious );
+	this->pImpl->tracker->assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs,
+	                                 currentPoints, this->pImpl->currentIDs,
+	                                 this->pImpl->previousToCurrent, this->pImpl->currentToPrevious );
 
 	lo_message msg;
 

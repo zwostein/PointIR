@@ -215,9 +215,15 @@ int main( int argc, char ** argv )
 			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.fps),
 			false, captureFactory.fps, "float", cmd );
 
+		std::vector< std::string > availableTrackerNames = outputFactory.trackerFactory.getAvailableTrackerNames();
+		TCLAP::ValuesConstraint<std::string> trackersArgConstraint( availableTrackerNames );
+		TCLAP::ValueArg<std::string> trackerArg(
+			"t", "tracker",
+			"The tracker used for outputs that need identifiiable contact points.\nDefaults to \"" + outputFactory.trackerFactory.getDefaultTrackerName() + "\"",
+			false, outputFactory.trackerFactory.getDefaultTrackerName(), &trackersArgConstraint, cmd );
+
 		std::vector< std::string > availableCaptureNames = captureFactory.getAvailableCaptureNames();
 		TCLAP::ValuesConstraint<std::string> capturesArgConstraint( availableCaptureNames );
-		std::string defaultCapturesAsArgument;
 		TCLAP::ValueArg<std::string> captureArg(
 			"c", "capture",
 			"The capture module used to retrieve the video stream.\nDefaults to \"" + captureName + "\"",
@@ -251,6 +257,7 @@ int main( int argc, char ** argv )
 
 		calibrationHook.setBeginHook( calibrationBeginHookArg.getValue() );
 		calibrationHook.setEndHook( calibrationEndHookArg.getValue() );
+		outputFactory.trackerFactory.setDefaultTrackerName( trackerArg.getValue() );
 		captureName = captureArg.getValue();
 		captureFactory.deviceName = deviceNameArg.getValue();
 		captureFactory.width = widthArg.getValue();

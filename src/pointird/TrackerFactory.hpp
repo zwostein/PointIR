@@ -17,28 +17,26 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TRACKER__INCLUDED_
-#define _TRACKER__INCLUDED_
+#ifndef _TRACKERFACTORY__INCLUDED_
+#define _TRACKERFACTORY__INCLUDED_
 
-
-#include <PointIR/PointArray.h>
+#include "Tracker/ATracker.hpp"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 
-class Tracker
+class TrackerFactory
 {
 public:
-	Tracker( const Tracker & ) = delete; // disable copy constructor
+	TrackerFactory();
+	~TrackerFactory();
 
-	Tracker();
-	Tracker( unsigned int maxID );
-	~Tracker();
-
-	void assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
-	                const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
-	                std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious );
+	Tracker::ATracker * newTracker( const std::string name = std::string("") ) const;
+	std::vector< std::string > getAvailableTrackerNames() const;
+	void setDefaultTrackerName( const std::string name );
+	std::string getDefaultTrackerName() const;
 
 private:
 	class Impl;

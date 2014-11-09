@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#define _POINTOUTPUT_UINPUT__LIVEDEBUG_
+#define _POINTOUTPUT_UINPUT__LIVEDEBUG_
 
 
 #include "Uinput.hpp"
@@ -56,7 +56,18 @@ class Uinput::Impl
 {
 public:
 	int fd = 0;
+
 	bool hadPreviousContact = true;
+
+	Tracker::ATracker * tracker = nullptr;
+	PointIR::PointArray previousPoints;
+	std::vector< int > previousIDs;
+	std::vector< int > currentIDs;
+	std::vector< int > currentToPrevious;
+	std::vector< int > previousToCurrent;
+
+	void outputPointsTypeA( const PointIR::PointArray & pointArray );
+	void outputPointsTypeB( const PointIR::PointArray & pointArray );
 };
 
 
@@ -80,9 +91,12 @@ static int xioctl( int fd, unsigned long int request )
 }
 
 
-Uinput::Uinput() :
+Uinput::Uinput( const TrackerFactory * trackerFactory ) :
 	pImpl( new Impl )
 {
+	if( trackerFactory )
+		this->pImpl->tracker = trackerFactory->newTracker();
+
 	this->pImpl->fd = open( uinputDeviceName.c_str(), O_WRONLY | O_NONBLOCK );
 	if( this->pImpl->fd < 0 )
 		throw SYSTEM_ERROR( errno, "open(\""+uinputDeviceName+"\",O_WRONLY|O_NONBLOCK)" );
@@ -95,6 +109,12 @@ Uinput::Uinput() :
 	uidev.id.vendor  = 0x1; //TODO: choose something different?
 	uidev.id.product = 0x1; //TODO: choose something different?
 	uidev.id.version = 1;
+
+	if( this->pImpl->tracker )
+	{
+		uidev.absmax[ABS_MT_SLOT] = 16;
+		uidev.absmax[ABS_MT_TRACKING_ID] = 0xffff;
+	}
 
 	uidev.absmax[ABS_MT_POSITION_X] = resX;
 	uidev.absmax[ABS_MT_POSITION_Y] = resY;
@@ -115,16 +135,13 @@ Uinput::Uinput() :
 	uidev.absfuzz[ABS_Y] = fuzzY;
 	uidev.absflat[ABS_Y] = flatY;
 
-	if( write( this->pImpl->fd, &uidev, sizeof(uidev) ) != sizeof(uidev) )
-		throw SYSTEM_ERROR( errno, "write(\""+uinputDeviceName+"\",uidev,"+std::to_string(sizeof(uidev))+")" );
-
 	if( xioctl( this->pImpl->fd, UI_SET_EVBIT, EV_SYN ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_EVBIT,EV_SYN)" );
-/*
+
 	// set direct device - recommended for new drivers - https://www.kernel.org/doc/Documentation/input/event-codes.txt
 	if( xioctl( this->pImpl->fd, UI_SET_PROPBIT, INPUT_PROP_DIRECT ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_PROPBIT,INPUT_PROP_DIRECT)" );
-*/
+
 	// using touch button - required for userspace to recognize touchscreens
 	if( xioctl( this->pImpl->fd, UI_SET_EVBIT, EV_KEY ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_EVBIT,EV_KEY)" );
@@ -139,11 +156,23 @@ Uinput::Uinput() :
 	if( xioctl( this->pImpl->fd, UI_SET_ABSBIT, ABS_MT_POSITION_Y ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_ABSBIT,ABS_MT_POSITION_Y)" );
 
+	// if using B protocol
+	if( this->pImpl->tracker )
+	{
+		if( xioctl( this->pImpl->fd, UI_SET_ABSBIT, ABS_MT_SLOT ) == -1 )
+			throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_ABSBIT,ABS_MT_SLOT)" );
+		if( xioctl( this->pImpl->fd, UI_SET_ABSBIT, ABS_MT_TRACKING_ID ) == -1 )
+			throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_ABSBIT,ABS_MT_TRACKING_ID)" );
+	}
+
 	//HACK: xorg/udev needs this to recognize it as touchscreen?
 	if( xioctl( this->pImpl->fd, UI_SET_ABSBIT, ABS_X ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_ABSBIT,ABS_X)" );
 	if( xioctl( this->pImpl->fd, UI_SET_ABSBIT, ABS_Y ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_SET_ABSBIT,ABS_Y)" );
+
+	if( write( this->pImpl->fd, &uidev, sizeof(uidev) ) != sizeof(uidev) )
+		throw SYSTEM_ERROR( errno, "write(\""+uinputDeviceName+"\",uidev,"+std::to_string(sizeof(uidev))+")" );
 
 	if( xioctl( this->pImpl->fd, UI_DEV_CREATE ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_DEV_CREATE)" );
@@ -152,6 +181,9 @@ Uinput::Uinput() :
 
 Uinput::~Uinput()
 {
+	if( this->pImpl->tracker )
+		delete this->pImpl->tracker;
+
 	if( this->pImpl->fd )
 	{
 		if( xioctl( this->pImpl->fd, UI_DEV_DESTROY ) == -1 )
@@ -175,6 +207,8 @@ static std::map< int, std::string > eventCodeStrings =
 	{BTN_TOUCH,"BTN_TOUCH"},
 	{BTN_TOOL_FINGER,"BTN_TOOL_FINGER"},
 	{SYN_MT_REPORT,"SYN_MT_REPORT"},
+	{ABS_MT_SLOT,"ABS_MT_SLOT"},
+	{ABS_MT_TRACKING_ID,"ABS_MT_TRACKING_ID"},
 	{ABS_MT_POSITION_X,"ABS_MT_POSITION_X"},
 	{ABS_MT_POSITION_Y,"ABS_MT_POSITION_Y"},
 	{SYN_REPORT,"SYN_REPORT"},
@@ -194,24 +228,33 @@ static void addEvent( std::vector< struct input_event > & events, __u16 type, __
 }
 
 
+// https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt
 void Uinput::outputPoints( const PointIR::PointArray & pointArray )
 {
-	// https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt
+	if( this->pImpl->tracker )
+		this->pImpl->outputPointsTypeB( pointArray );
+	else
+		this->pImpl->outputPointsTypeA( pointArray );
+}
+
+
+void Uinput::Impl::outputPointsTypeA( const PointIR::PointArray & pointArray )
+{
 	std::vector< struct input_event > events;
 
 	if( pointArray.empty() )
 	{
 		// if there was a contact last pass, send a SYN_MT_REPORT followed by SYN_REPORT to mark the last contact as lifted
-		if( this->pImpl->hadPreviousContact )
+		if( this->hadPreviousContact )
 		{
 //			addEvent( events, EV_KEY, BTN_TOUCH, 0 );
 			addEvent( events, EV_SYN, SYN_MT_REPORT );
-			this->pImpl->hadPreviousContact = false;
+			this->hadPreviousContact = false;
 		}
 	}
 	else
 	{
-//		if( !this->pImpl->hadPreviousContact )
+//		if( !this->hadPreviousContact )
 //		{
 //			addEvent( events, EV_KEY, BTN_TOUCH, 1 );
 //		}
@@ -234,7 +277,7 @@ void Uinput::outputPoints( const PointIR::PointArray & pointArray )
 			addEvent( events, EV_ABS, ABS_MT_POSITION_Y, y );
 			addEvent( events, EV_SYN, SYN_MT_REPORT );
 
-			this->pImpl->hadPreviousContact = true;
+			this->hadPreviousContact = true;
 		}
 	}
 
@@ -246,7 +289,7 @@ void Uinput::outputPoints( const PointIR::PointArray & pointArray )
 
 	for( const auto & event : events )
 	{
-		ssize_t ret = write( this->pImpl->fd, &event, sizeof(event) );
+		ssize_t ret = write( this->fd, &event, sizeof(event) );
 		if( ret != sizeof( struct input_event ) )
 			throw SYSTEM_ERROR( errno, "write(\""+uinputDeviceName+"\",event,"+std::to_string(sizeof(event))+") = "+std::to_string(ret) );
 #ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
@@ -264,7 +307,7 @@ void Uinput::outputPoints( const PointIR::PointArray & pointArray )
 	size_t written = 0;
 	do
 	{
-		ssize_t ret = write( this->pImpl->fd, events.data()+written, toWrite );
+		ssize_t ret = write( this->fd, events.data()+written, toWrite );
 		if( ret <= 0 )
 			throw SYSTEM_ERROR( errno, "write(\""+uinputDeviceName+"\",events,"+std::to_string(packetSize)+") = "+std::to_string(ret) );
 		written += ret;
@@ -278,4 +321,72 @@ void Uinput::outputPoints( const PointIR::PointArray & pointArray )
 		std::cerr << "PointOutputUinput: Written " << events.size() << " events, each " << sizeof(struct input_event) << " bytes\n";
 #endif
 */
+}
+
+
+void Uinput::Impl::outputPointsTypeB( const PointIR::PointArray & currentPoints )
+{
+	std::vector< struct input_event > events;
+
+	this->tracker->assignIDs( this->previousPoints, this->previousIDs,
+	                          currentPoints, this->currentIDs,
+	                          this->previousToCurrent, this->currentToPrevious );
+
+	// update / add new contacts
+	for( unsigned int i = 0; i < currentPoints.size(); i++ )
+	{
+		if( this->currentIDs[i] < 0 )
+			continue;
+
+		addEvent( events, EV_ABS, ABS_MT_SLOT, this->currentIDs[i] );
+		addEvent( events, EV_ABS, ABS_MT_TRACKING_ID, this->currentIDs[i] );
+
+		int16_t x = resX * currentPoints[i].x;
+		int16_t y = resY * currentPoints[i].y;
+
+		if( x >= resX )
+			x = resX - 1;
+		else if( x < 0 )
+			x = 0;
+
+		if( y >= resY )
+			y = resY - 1;
+		else if( y < 0 )
+			y = 0;
+
+		addEvent( events, EV_ABS, ABS_MT_POSITION_X, x );
+		addEvent( events, EV_ABS, ABS_MT_POSITION_Y, y );
+	}
+
+	// remove disappeared contacts
+	for( unsigned int i = 0; i < this->previousPoints.size(); i++ )
+	{
+		if( this->previousToCurrent[i] >= 0 )
+			continue;
+
+		addEvent( events, EV_ABS, ABS_MT_SLOT, this->previousIDs[i] );
+		addEvent( events, EV_ABS, ABS_MT_TRACKING_ID, -1 );
+	}
+
+	// if no events to send - we're done
+	if( events.empty() )
+		return;
+
+	addEvent( events, EV_SYN, SYN_REPORT );
+
+	this->previousPoints = currentPoints;
+	this->previousIDs = this->currentIDs;
+
+	for( const auto & event : events )
+	{
+		ssize_t ret = write( this->fd, &event, sizeof(event) );
+		if( ret != sizeof( struct input_event ) )
+			throw SYSTEM_ERROR( errno, "write(\""+uinputDeviceName+"\",event,"+std::to_string(sizeof(event))+") = "+std::to_string(ret) );
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
+		std::cerr << ".";
+#endif
+	}
+#ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
+	std::cerr << "\n";
+#endif
 }

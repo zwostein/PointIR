@@ -22,6 +22,7 @@
 
 
 #include "APointOutput.hpp"
+#include "../TrackerFactory.hpp"
 
 #include <memory>
 
@@ -35,7 +36,7 @@ public:
 	Uinput( const Uinput & ) = delete; // disable copy constructor
 	Uinput & operator=( const Uinput & other ) = delete; // disable assignment operator
 
-	Uinput();
+	Uinput( const TrackerFactory * trackerFactory = nullptr );
 	virtual ~Uinput();
 
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;

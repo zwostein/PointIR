@@ -66,6 +66,9 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 	this->pImpl->pointOutputMap.insert( { "uinput", [] ()
 		{ return new PointOutput::Uinput; }
 	} );
+	this->pImpl->pointOutputMap.insert( { "uinputB", [this] ()
+		{ return new PointOutput::Uinput( &(this->trackerFactory) ); }
+	} );
 #endif
 #ifdef POINTIR_UNIXDOMAINSOCKET
 	this->pImpl->pointOutputMap.insert( { "socket", [] ()
@@ -73,8 +76,8 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 	} );
 #endif
 #ifdef POINTIR_TUIO
-	this->pImpl->pointOutputMap.insert( { "tuio", [] ()
-		{ return new PointOutput::TUIO; }
+	this->pImpl->pointOutputMap.insert( { "tuio", [this] ()
+		{ return new PointOutput::TUIO( this->trackerFactory ); }
 	} );
 #endif
 #ifdef POINTIR_WIN8TOUCHINJECTION

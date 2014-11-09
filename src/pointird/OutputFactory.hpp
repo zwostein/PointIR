@@ -21,6 +21,8 @@
 #define _OUTPUTFACTORY__INCLUDED_
 
 
+#include "TrackerFactory.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,6 +55,7 @@ public:
 	std::vector< std::string > getAvailableOutputNames() const;
 
 	const Processor * processor = nullptr;
+	TrackerFactory trackerFactory;
 
 private:
 	class Impl;

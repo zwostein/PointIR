@@ -35,6 +35,11 @@ set( POINTIR_SOURCES
 	src/pointird/ControllerFactory.cpp
 	src/pointird/Processor.cpp
 
+	src/pointird/TrackerFactory.cpp
+	src/pointird/Tracker/Simple.cpp
+	src/pointird/Tracker/Hungarian.cpp
+	src/pointird/Tracker/ixoptimal.cpp
+
 	src/pointird/Unprojector/CalibrationDataFile.cpp
 	src/pointird/Unprojector/CalibrationImageFile.cpp
 	src/pointird/PointFilter/OffscreenFilter.cpp
@@ -57,8 +62,6 @@ option( POINTIR_V4L2 "Enable Video4Linux2 API for video capture" ${LINUX} )
 option( POINTIR_DBUS "Enable DBus controller" ON )
 option( POINTIR_TUIO "Enable TUIO output module" ON )
 option( POINTIR_WIN8TOUCHINJECTION "Enable Windows Touch Injection API" OFF )
-
-set( POINTIR_NEED_TRACKER OFF )
 
 if( POINTIR_UINPUT )
 	add_definitions( -DPOINTIR_UINPUT )
@@ -101,7 +104,6 @@ if( POINTIR_TUIO )
 	include_directories( ${LIBLO_INCLUDE_DIRS} )
 	add_definitions( ${LIBLO_DEFINITIONS} )
 	list( APPEND POINTIR_LIBRARIES ${LIBLO_LIBRARIES} )
-	set( POINTIR_NEED_TRACKER ON )
 endif()
 
 if( POINTIR_WIN8TOUCHINJECTION )
@@ -110,12 +112,6 @@ if( POINTIR_WIN8TOUCHINJECTION )
 		src/pointird/PointOutput/Win8TouchInjection.cpp
 	)
 	set( POINTIR_NEED_TRACKER ON )
-endif()
-
-if( POINTIR_NEED_TRACKER )
-	list( APPEND POINTIR_SOURCES
-		src/pointird/Tracker.cpp
-	)
 endif()
 
 option( POINTIR_USE_SYSTEM_TCLAP "Use system TCLAP installation" OFF )
