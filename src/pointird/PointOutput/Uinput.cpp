@@ -112,7 +112,7 @@ Uinput::Uinput( const TrackerFactory * trackerFactory ) :
 
 	if( this->pImpl->tracker )
 	{
-		uidev.absmax[ABS_MT_SLOT] = 16;
+		uidev.absmax[ABS_MT_SLOT] = this->pImpl->tracker->getMaxID();
 		uidev.absmax[ABS_MT_TRACKING_ID] = 0xffff;
 	}
 
@@ -176,6 +176,8 @@ Uinput::Uinput( const TrackerFactory * trackerFactory ) :
 
 	if( xioctl( this->pImpl->fd, UI_DEV_CREATE ) == -1 )
 		throw SYSTEM_ERROR( errno, "ioctl(\""+uinputDeviceName+"\",UI_DEV_CREATE)" );
+
+	std::cout << "PointOutput::Uinput: Generating type " << ((this->pImpl->tracker) ? "B":"A") << " input events\n";
 }
 
 

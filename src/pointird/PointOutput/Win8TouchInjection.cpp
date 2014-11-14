@@ -20,7 +20,7 @@
 
 #include "Win8TouchInjection.hpp"
 #include "../exceptions.hpp"
-#include "../Tracker.hpp"
+#include "../TrackerFactory.hpp"
 
 #include <PointIR/PointArray.h>
 
@@ -39,12 +39,10 @@ using namespace PointOutput;
 class Win8TouchInjection::Impl
 {
 public:
-	Impl() : tracker(MAX_TOUCH_COUNT) {}
-
 	InitializeTouchInjectionPtr InitializeTouchInjection = nullptr;
 	InjectTouchInputPtr InjectTouchInput = nullptr;
 
-	Tracker tracker;
+	Tracker::ATracker * tracker = nullptr;
 	PointIR::PointArray previousPoints;
 	std::vector< int > previousIDs;
 	std::vector< int > currentIDs;
@@ -53,9 +51,11 @@ public:
 };
 
 
-Win8TouchInjection::Win8TouchInjection() :
+Win8TouchInjection::Win8TouchInjection( const TrackerFactory & trackerFactory ) :
 	pImpl( new Impl )
 {
+	this->pImpl->tracker = trackerFactory.newTracker( MAX_TOUCH_COUNT );
+
 	HMODULE hMod = LoadLibraryW( L"user32.dll" );
 	if( !hMod )
 		throw RUNTIME_ERROR( "Could not load user32.dll" );
@@ -68,8 +68,10 @@ Win8TouchInjection::Win8TouchInjection() :
 	if( !this->pImpl->InjectTouchInput )
 		throw RUNTIME_ERROR( "Touch Injection API unavailable! (InjectTouchInput not found in user32.dll)" );
 
-	if( !this->pImpl->InitializeTouchInjection( MAX_TOUCH_COUNT, TOUCH_FEEDBACK_DEFAULT ) )
+	if( !this->pImpl->InitializeTouchInjection( this->pImpl->tracker->getMaxID(), TOUCH_FEEDBACK_DEFAULT ) )
 		throw RUNTIME_ERROR( "InitializeTouchInjection failure. GetLastError=" + std::to_string(GetLastError()) );
+
+	std::cout << "PointOutput::Win8TouchInjection: initialized for " << this->pImpl->tracker->getMaxID() << " touch points\n";
 }
 
 
@@ -95,7 +97,7 @@ static void clampToScreen( POINT & p, int screenWidth, int screenHeight )
 
 void Win8TouchInjection::outputPoints( const PointIR::PointArray & currentPoints )
 {
-	this->pImpl->tracker.assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs,
+	this->pImpl->tracker->assignIDs( this->pImpl->previousPoints, this->pImpl->previousIDs,
 	                                currentPoints, this->pImpl->currentIDs,
 	                                this->pImpl->previousToCurrent, this->pImpl->currentToPrevious );
 

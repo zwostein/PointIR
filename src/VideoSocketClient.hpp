@@ -24,6 +24,7 @@
 #include <PointIR/Frame.h>
 
 #include <string>
+#include <memory>
 
 
 namespace PointIR
@@ -31,11 +32,12 @@ namespace PointIR
 	class VideoSocketClient
 	{
 	public:
-		VideoSocketClient( const std::string & socketName = "/tmp/PointIR.video.socket" );
+		VideoSocketClient( const std::string & path = "/tmp/PointIR.video.socket" );
 		virtual ~VideoSocketClient();
 		bool receiveFrame( Frame & frame ) const;
 	private:
-		int socketFD;
+		class Impl;
+		std::unique_ptr< Impl > pImpl;
 	};
 }
 

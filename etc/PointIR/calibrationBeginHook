@@ -1,4 +1,5 @@
 #!/bin/sh
+
 # This is an example script that gets called just before pointird performs a calibration.
 # pointird will not proceed as long as this script is running.
 
@@ -8,7 +9,7 @@
 # It will wait a second for the servo to finish its movement and then disables the servo again. (so the servo can be moved by hand)
 
 echo -n "Removing IR pass filter ... "
-/usr/local/bin/servusb -e 127
+/usr/local/bin/servusb -e 127 || exit 1
 sleep 1
-/usr/local/bin/servusb -d
+/usr/local/bin/servusb -d || exit 1
 echo "done"

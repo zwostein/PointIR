@@ -33,21 +33,25 @@ class AUnprojector;
 class CalibrationDataFile
 {
 public:
-	CalibrationDataFile( AUnprojector & unprojector );
+#ifdef __unix__
+	CalibrationDataFile( AUnprojector & unprojector )
+		: CalibrationDataFile( unprojector, "/tmp/" ) {}
+#else
+	CalibrationDataFile( AUnprojector & unprojector )
+		: CalibrationDataFile( unprojector, "" ) {}
+#endif
+
+	CalibrationDataFile( AUnprojector & unprojector, const std::string & directory );
 	~CalibrationDataFile();
 
-	bool load() { return CalibrationDataFile::load( this->unprojector ); }
-	bool save() { return CalibrationDataFile::save( this->unprojector ); }
+	std::string getFilename() const { return this->filename; }
 
-	static bool load( AUnprojector & unprojector );
-	static bool save( const AUnprojector & unprojector );
-
-	static void setDirectory( const std::string & directory );
-	static const std::string & getDirectory() { return CalibrationDataFile::directory; }
+	bool load();
+	bool save() const;
 
 private:
-	static std::string directory;
 	AUnprojector & unprojector;
+	std::string filename;
 };
 
 }

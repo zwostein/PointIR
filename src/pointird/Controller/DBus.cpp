@@ -94,7 +94,7 @@ public:
 
 		MethodMap unprojectorMethods;
 		unprojectorMethods.insert( { "saveCalibrationData", std::bind( &Impl::get< bool >, this, Getter< bool >(
-			std::bind( static_cast<bool(Unprojector::CalibrationDataFile::*)(void)>(&Unprojector::CalibrationDataFile::save), &calibrationDataFile ) ),
+			std::bind( static_cast<bool(Unprojector::CalibrationDataFile::*)(void)const>(&Unprojector::CalibrationDataFile::save), &calibrationDataFile ) ),
 			_1, _2 ) } );
 		unprojectorMethods.insert( { "loadCalibrationData", std::bind( &Impl::get< bool >, this, Getter< bool >(
 			std::bind( static_cast<bool(Unprojector::CalibrationDataFile::*)(void)>(&Unprojector::CalibrationDataFile::load), &calibrationDataFile ) ),

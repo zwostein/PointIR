@@ -20,10 +20,13 @@
 #include <iostream>
 #include <vector>
 
+#include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+
 #ifdef __unix__
 	#include <signal.h>
-	#include <string.h>
+	#include <sys/wait.h>
 #endif
 
 #include <tclap/CmdLine.h>
@@ -48,6 +51,8 @@
 #include "PointFilter/Chain.hpp"
 
 #include "Processor.hpp"
+
+#include "exceptions.hpp"
 
 
 static const char * notice =
@@ -74,15 +79,31 @@ public:
 	const std::string & getBeginHook() { return this->beginHook; }
 	const std::string & getEndHook() { return this->endHook; }
 
+	static int system( const std::string & cmd )
+	{
+		int ret = ::system( cmd.c_str() );
+		if( ret < 0 )
+			throw SYSTEM_ERROR( errno, "system(\""+cmd+"\")");
+#ifdef __unix__
+		if( WIFEXITED(ret) )
+			return WEXITSTATUS(ret);
+		else
+			throw RUNTIME_ERROR("\""+cmd+"\" terminated abnormaly");
+#else
+		return ret;
+#endif
+	}
+
 	virtual void calibrationBegin() override
 	{
 		if( beginHook.empty() )
 			return;
 		std::cout << "CalibrationHook: Begin calibration - executing \"" << beginHook << "\"\n";
 		std::cout << "--------\n";
-		int ret = system( beginHook.c_str() );
+		int ret = CalibrationHook::system( beginHook );
 		std::cout << "--------\n";
-		std::cout << "CalibrationHook: \"" << beginHook << "\" returned " << ret << "\n";
+		if( ret >= 0 )
+			std::cout << "CalibrationHook: \"" << beginHook << "\" returned " << ret << "\n";
 	}
 
 	virtual void calibrationEnd( bool success ) override
@@ -92,9 +113,10 @@ public:
 		std::string call = endHook + " " + (success?"1":"0");
 		std::cout << "CalibrationHook: End calibration (" << (success?"success":"failure") << ") - executing \"" << call << "\"\n";
 		std::cout << "--------\n";
-		int ret = system( call.c_str() );
+		int ret = CalibrationHook::system( call );
 		std::cout << "--------\n";
-		std::cout << "CalibrationHook: \"" << endHook << "\" returned " << ret << "\n";
+		if( ret >= 0 )
+			std::cout << "CalibrationHook: \"" << endHook << "\" returned " << ret << "\n";
 	}
 
 private:
@@ -134,8 +156,13 @@ int main( int argc, char ** argv )
 #ifdef POINTIR_UNIXDOMAINSOCKET
 	outputNames.push_back( "socket" );
 #endif
-#ifdef POINTIR_TUIO
+
+#ifndef __unix__
+	#if defined POINTIR_POINTIR_WIN8TOUCHINJECTION
+	outputNames.push_back( "win8" );
+	#elif defined POINTIR_TUIO
 	outputNames.push_back( "tuio" );
+	#endif
 #endif
 
 #ifdef POINTIR_DBUS
@@ -146,13 +173,9 @@ int main( int argc, char ** argv )
 	captureFactory.deviceName = "/dev/video0";
 	calibrationHook.setBeginHook( "/etc/PointIR/calibrationBeginHook" );
 	calibrationHook.setEndHook( "/etc/PointIR/calibrationEndHook" );
-	Unprojector::CalibrationDataFile::setDirectory( "/tmp/" );
-	Unprojector::CalibrationImageFile::setDirectory( "/tmp/");
 #else
 	calibrationHook.setBeginHook( "pointir_calibrationBeginHook.bat" );
 	calibrationHook.setEndHook( "pointir_calibrationEndHook.bat" );
-	Unprojector::CalibrationDataFile::setDirectory( "" );
-	Unprojector::CalibrationImageFile::setDirectory( "" );
 #endif
 
 	////////////////////////////////////////////////////////////////
@@ -291,7 +314,8 @@ int main( int argc, char ** argv )
 	detector.setBoundingFilterEnabled( true );
 
 	Unprojector::AutoOpenCV unprojector;
-	Unprojector::CalibrationDataFile::load( unprojector );
+	Unprojector::CalibrationDataFile calibrationDataFile( unprojector );
+	calibrationDataFile.load();
 
 	PointFilter::Chain pointFilterChain;
 

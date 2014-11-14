@@ -36,20 +36,17 @@ public:
 	UnixDomainSocket( const UnixDomainSocket & ) = delete; // disable copy constructor
 	UnixDomainSocket & operator=( const UnixDomainSocket & other ) = delete; // disable assignment operator
 
-	UnixDomainSocket();
+	UnixDomainSocket() : UnixDomainSocket( "/tmp/PointIR.video.socket" ) {}
+	UnixDomainSocket( const std::string & socketPath );
 	virtual ~UnixDomainSocket();
 
 	virtual void outputFrame( const PointIR::Frame & frame ) override;
 
 	const std::string & getSocketPath() const { return this->socketPath; }
 
-	static void setDirectory( const std::string & directory );
-	static const std::string & getDirectory() { return UnixDomainSocket::directory; }
-
 private:
-	static std::string directory;
-
 	std::string socketPath;
+
 	class Impl;
 	std::unique_ptr< Impl > pImpl;
 };

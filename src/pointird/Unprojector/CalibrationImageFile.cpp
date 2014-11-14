@@ -35,10 +35,6 @@
 using namespace Unprojector;
 
 
-// the default directory
-std::string CalibrationImageFile::directory;
-
-
 static bool fileExists( const std::string & name )
 {
 	struct stat buffer;
@@ -46,19 +42,11 @@ static bool fileExists( const std::string & name )
 }
 
 
-void CalibrationImageFile::setDirectory( const std::string & directory )
-{
-	CalibrationImageFile::directory = directory;
-	if( !CalibrationImageFile::directory.empty() && CalibrationImageFile::directory.back() != '/' )
-		CalibrationImageFile::directory += '/';
-}
-
-
-CalibrationImageFile::CalibrationImageFile( AAutoUnprojector & unprojector, unsigned int width, unsigned int height ) :
+CalibrationImageFile::CalibrationImageFile( AAutoUnprojector & unprojector, const std::string & directory, unsigned int width, unsigned int height ) :
 	unprojector(unprojector), width(width), height(height)
 {
 	std::stringstream ss;
-	ss << CalibrationImageFile::directory << "PointIR." << this->width << "x" << this->height << ".png";
+	ss << directory << "PointIR." << this->width << "x" << this->height << ".png";
 	this->filename = ss.str();
 }
 

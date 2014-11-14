@@ -31,7 +31,7 @@
 class TrackerFactory::Impl
 {
 public:
-	typedef std::function< Tracker::ATracker*(void) > TrackerCreator;
+	typedef std::function< Tracker::ATracker*( unsigned int ) > TrackerCreator;
 	typedef std::map< std::string, TrackerCreator > TrackerMap;
 
 	TrackerMap trackerMap;
@@ -41,12 +41,12 @@ public:
 
 TrackerFactory::TrackerFactory() : pImpl( new Impl )
 {
-	this->pImpl->trackerMap.insert( { "simple", [] ()
-		{ return new Tracker::Simple; }
+	this->pImpl->trackerMap.insert( { "simple", [] ( unsigned int maxID )
+		{ return maxID ? new Tracker::Simple(maxID) : new Tracker::Simple; }
 	} );
 
-	this->pImpl->trackerMap.insert( { "hungarian", [] ()
-		{ return new Tracker::Hungarian; }
+	this->pImpl->trackerMap.insert( { "hungarian", [] ( unsigned int maxID )
+		{ return maxID ? new Tracker::Hungarian(maxID) : new Tracker::Hungarian; }
 	} );
 
 	this->setDefaultTrackerName("simple");
@@ -75,14 +75,21 @@ void TrackerFactory::setDefaultTrackerName( const std::string name )
 
 Tracker::ATracker * TrackerFactory::newTracker( const std::string name ) const
 {
+	return this->newTracker( 0, name );
+}
+
+
+Tracker::ATracker * TrackerFactory::newTracker( unsigned int maxID, const std::string name ) const
+{
 	Impl::TrackerMap::const_iterator it = this->pImpl->trackerMap.find( name );
 	if( it == this->pImpl->trackerMap.end() )
 		it = this->pImpl->trackerMap.find( this->pImpl->defaultTrackerName );
 	if( it == this->pImpl->trackerMap.end() )
 		return nullptr;
-	Tracker::ATracker * tracker = it->second();
+	Tracker::ATracker * tracker = it->second( maxID );
 	return tracker;
 }
+
 
 
 std::vector< std::string > TrackerFactory::getAvailableTrackerNames() const

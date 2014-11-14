@@ -22,6 +22,7 @@
 
 
 #include "APointOutput.hpp"
+#include "../TrackerFactory.hpp"
 
 #include <memory>
 
@@ -35,7 +36,7 @@ public:
 	Win8TouchInjection( const Win8TouchInjection & ) = delete; // disable copy constructor
 	Win8TouchInjection & operator=( const Win8TouchInjection & other ) = delete; // disable assignment operator
 
-	Win8TouchInjection();
+	Win8TouchInjection( const TrackerFactory & trackerFactory );
 	virtual ~Win8TouchInjection();
 
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;

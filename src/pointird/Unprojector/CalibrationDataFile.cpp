@@ -28,26 +28,9 @@
 using namespace Unprojector;
 
 
-// the default directory
-std::string CalibrationDataFile::directory;
-
-
-static std::string getCalibrationDataFileName( const AUnprojector & unprojector )
+CalibrationDataFile::CalibrationDataFile( AUnprojector & unprojector, const std::string & directory ) : unprojector(unprojector)
 {
-	return CalibrationDataFile::getDirectory() + std::string("PointIR.calib");
-}
-
-
-void CalibrationDataFile::setDirectory( const std::string & directory )
-{
-	CalibrationDataFile::directory = directory;
-	if( !CalibrationDataFile::directory.empty() && CalibrationDataFile::directory.back() != '/' )
-		CalibrationDataFile::directory += '/';
-}
-
-
-CalibrationDataFile::CalibrationDataFile( AUnprojector & unprojector ) : unprojector(unprojector)
-{
+	this->filename = directory + "/PointIR.calib";
 }
 
 
@@ -56,14 +39,13 @@ CalibrationDataFile::~CalibrationDataFile()
 }
 
 
-bool CalibrationDataFile::load( AUnprojector & unprojector )
+bool CalibrationDataFile::load()
 {
-	std::string fileName = getCalibrationDataFileName( unprojector );
-	std::cout << "CalibrationDataFile: Loading calibration data from \"" + fileName + "\" ... ";
-	std::ifstream file( fileName, std::ios::in | std::ifstream::binary );
+	std::cout << "CalibrationDataFile: Loading calibration data from \"" + this->filename + "\" ... ";
+	std::ifstream file( this->filename, std::ios::in | std::ifstream::binary );
 	std::vector< uint8_t > rawData;
 	std::copy( std::istreambuf_iterator< char >( file ), std::istreambuf_iterator< char >(), std::back_inserter(rawData) );
-	if( unprojector.setRawCalibrationData( rawData ) )
+	if( this->unprojector.setRawCalibrationData( rawData ) )
 	{
 		std::cout << "ok" << std::endl;
 		return true;
@@ -76,12 +58,11 @@ bool CalibrationDataFile::load( AUnprojector & unprojector )
 }
 
 
-bool CalibrationDataFile::save( const AUnprojector & unprojector )
+bool CalibrationDataFile::save() const
 {
-	std::string fileName = getCalibrationDataFileName( unprojector );
-	std::cout << "CalibrationDataFile: Saving calibration data to \"" + fileName + "\"" << std::endl;
-	std::ofstream file( fileName, std::ios::out | std::ofstream::binary );
-	std::vector< uint8_t > rawData = unprojector.getRawCalibrationData();
+	std::cout << "CalibrationDataFile: Saving calibration data to \"" + this->filename + "\"" << std::endl;
+	std::ofstream file( this->filename, std::ios::out | std::ofstream::binary );
+	std::vector< uint8_t > rawData = this->unprojector.getRawCalibrationData();
 	std::copy( rawData.begin(), rawData.end(), std::ostreambuf_iterator< char >(file) );
 	return true;
 }

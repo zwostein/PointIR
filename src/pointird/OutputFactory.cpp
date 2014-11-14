@@ -81,8 +81,8 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 	} );
 #endif
 #ifdef POINTIR_WIN8TOUCHINJECTION
-	this->pImpl->pointOutputMap.insert( { "win8", [] ()
-		{ return new PointOutput::Win8TouchInjection; }
+	this->pImpl->pointOutputMap.insert( { "win8", [this] ()
+		{ return new PointOutput::Win8TouchInjection( this->trackerFactory ); }
 	} );
 #endif
 	this->pImpl->pointOutputMap.insert( { "debugcv", [this] () -> PointOutput::APointOutput *

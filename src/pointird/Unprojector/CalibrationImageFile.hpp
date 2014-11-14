@@ -33,18 +33,20 @@ class AAutoUnprojector;
 class CalibrationImageFile
 {
 public:
-	CalibrationImageFile( Unprojector::AAutoUnprojector & unprojector, unsigned int width, unsigned int height );
+#ifdef __unix__
+	CalibrationImageFile( Unprojector::AAutoUnprojector & unprojector, unsigned int width, unsigned int height )
+		: CalibrationImageFile( unprojector, "/tmp/", width, height ) {}
+#else
+	CalibrationImageFile( Unprojector::AAutoUnprojector & unprojector, unsigned int width, unsigned int height )
+		: CalibrationImageFile( unprojector, "", width, height ) {}
+#endif
+	CalibrationImageFile( Unprojector::AAutoUnprojector & unprojector, const std::string & directory, unsigned int width, unsigned int height );
 	~CalibrationImageFile();
 
 	std::string getFilename() const { return this->filename; }
 	bool generate();
 
-	static void setDirectory( const std::string & directory );
-	static const std::string & getDirectory() { return CalibrationImageFile::directory; }
-
 private:
-	static std::string directory;
-
 	Unprojector::AAutoUnprojector & unprojector;
 	unsigned int width = 256;
 	unsigned int height = 256;

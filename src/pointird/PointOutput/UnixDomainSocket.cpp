@@ -43,18 +43,6 @@
 using namespace PointOutput;
 
 
-// the default directory
-std::string UnixDomainSocket::directory = "/tmp/";
-
-
-void UnixDomainSocket::setDirectory( const std::string & directory )
-{
-	UnixDomainSocket::directory = directory;
-	if( !UnixDomainSocket::directory.empty() && UnixDomainSocket::directory.back() != '/' )
-		UnixDomainSocket::directory += '/';
-}
-
-
 class UnixDomainSocket::Impl
 {
 public:
@@ -87,12 +75,10 @@ static void unlinkSocket( const std::string & socketPath )
 }
 
 
-UnixDomainSocket::UnixDomainSocket() :
+UnixDomainSocket::UnixDomainSocket( const std::string & socketPath ) :
 	pImpl( new Impl )
 {
-	std::stringstream ss;
-	ss << UnixDomainSocket::directory << "PointIR.points.socket";
-	this->socketPath = ss.str();
+	this->socketPath = socketPath;
 
 	// delete existing socket if it exists
 	unlinkSocket( this->socketPath );
@@ -120,6 +106,8 @@ UnixDomainSocket::UnixDomainSocket() :
 
 	if( -1 == listen( this->pImpl->local.fd, 8 ) )
 		throw SYSTEM_ERROR( errno, "listen" );
+
+	std::cout << "PointOutput::UnixDomainSocket: serving raw points on \"" << this->socketPath << "\"\n";
 }
 
 

@@ -34,6 +34,7 @@ public:
 	~TrackerFactory();
 
 	Tracker::ATracker * newTracker( const std::string name = std::string("") ) const;
+	Tracker::ATracker * newTracker( unsigned int maxID, const std::string name = std::string("") ) const;
 	std::vector< std::string > getAvailableTrackerNames() const;
 	void setDefaultTrackerName( const std::string name );
 	std::string getDefaultTrackerName() const;

@@ -23,7 +23,8 @@
 #ifndef __unix__
 //TODO: implement for non unix platforms
 using namespace PointIR;
-VideoSocketClient::VideoSocketClient( const std::string & socketName ) {}
+class VideoSocketClient::Impl{};
+VideoSocketClient::VideoSocketClient( const std::string & path ) : pImpl( new Impl ) {}
 VideoSocketClient::~VideoSocketClient() {}
 bool VideoSocketClient::receiveFrame( Frame & frame ) const { return false; }
 #else
@@ -52,61 +53,97 @@ std::runtime_error( std::string(__PRETTY_FUNCTION__) + std::string(": ") + (what
 using namespace PointIR;
 
 
-VideoSocketClient::VideoSocketClient( const std::string & socketName )
+class VideoSocketClient::Impl
 {
-	this->socketFD = socket( AF_UNIX, SOCK_SEQPACKET, 0 );
-	if( -1 == this->socketFD )
-		throw SYSTEM_ERROR( errno, "socket" );
+private:
+	mutable int socketFD = 0;
 
-	// set local socket nonblocking
-	int flags = fcntl( this->socketFD, F_GETFL, 0 );
-	if( -1 == flags )
-		throw SYSTEM_ERROR( errno, "fcntl" );
-	if( -1 == fcntl( this->socketFD, F_SETFL, flags | O_NONBLOCK ) )
-		throw SYSTEM_ERROR( errno, "fcntl" );
+public:
+	std::string socketName;
 
-	struct sockaddr_un remoteAddr;
-	remoteAddr.sun_family = AF_UNIX;
-	strcpy( remoteAddr.sun_path, socketName.c_str() );
-	size_t len = strlen(remoteAddr.sun_path) + sizeof(remoteAddr.sun_family);
-	if( -1 == connect( this->socketFD, (struct sockaddr *)&remoteAddr, len ) )
-		throw SYSTEM_ERROR( errno, "connect" );
+	Impl() {}
+
+	~Impl()
+	{
+		if( this->socketFD )
+			close( this->socketFD );
+	}
+
+	bool connectIfNeeded() const
+	{
+		if( this->socketFD )
+			return true;
+
+		this->socketFD = socket( AF_UNIX, SOCK_SEQPACKET, 0 );
+		if( -1 == this->socketFD )
+			throw SYSTEM_ERROR( errno, "socket" );
+
+		// set local socket nonblocking
+		int flags = fcntl( this->socketFD, F_GETFL, 0 );
+		if( -1 == flags )
+			throw SYSTEM_ERROR( errno, "fcntl" );
+		if( -1 == fcntl( this->socketFD, F_SETFL, flags | O_NONBLOCK ) )
+			throw SYSTEM_ERROR( errno, "fcntl" );
+
+		struct sockaddr_un remoteAddr;
+		remoteAddr.sun_family = AF_UNIX;
+		strcpy( remoteAddr.sun_path, this->socketName.c_str() );
+		size_t len = strlen(remoteAddr.sun_path) + sizeof(remoteAddr.sun_family);
+		if( -1 == connect( this->socketFD, (struct sockaddr *)&remoteAddr, len ) )
+//			throw SYSTEM_ERROR( errno, "connect" );
+			return false;
+
+		return true;
+	}
+
+	bool receiveFrame( Frame & frame ) const
+	{
+		if( !this->connectIfNeeded() )
+			return false;
+
+		ssize_t received;
+
+		// peek at the next packet - return if nothing received
+		PointIR_Frame peek;
+		received = recv( this->socketFD, &peek, sizeof(peek), MSG_PEEK );
+		if( -1 == received )
+		{
+			if( EAGAIN == errno || EWOULDBLOCK == errno )
+				return false;
+			else
+				throw SYSTEM_ERROR( errno, "recv" );
+		}
+		if( sizeof(peek) != received )
+			throw RUNTIME_ERROR( "too few data received" );
+
+		// resize packet buffer if needed
+		frame.resize( peek.width, peek.height );
+
+		// receive the packet
+		received = recv( this->socketFD, (PointIR_Frame*)frame, sizeof(PointIR_Frame)+frame.size(), 0 );
+		if( -1 == received )
+			throw SYSTEM_ERROR( errno, "recv" );
+		if( sizeof(PointIR_Frame)+frame.size() != (size_t)received )
+			throw RUNTIME_ERROR( "too few data received" );
+		return true;
+	}
+};
+
+
+VideoSocketClient::VideoSocketClient( const std::string & path ) : pImpl( new Impl )
+{
+	this->pImpl->socketName = path;
 }
 
 
 VideoSocketClient::~VideoSocketClient()
 {
-	close( this->socketFD );
 }
 
 
 bool VideoSocketClient::receiveFrame( Frame & frame ) const
 {
-	ssize_t received;
-
-	// peek at the next packet - return last frame if nothing received
-	PointIR_Frame peek;
-	received = recv( this->socketFD, &peek, sizeof(peek), MSG_PEEK );
-	if( -1 == received )
-	{
-		if( EAGAIN == errno || EWOULDBLOCK == errno )
-			return false;
-		else
-			throw SYSTEM_ERROR( errno, "recv" );
-	}
-	if( sizeof(peek) != received )
-		throw RUNTIME_ERROR( "too few data received" );
-
-	// resize packet buffer if needed
-	frame.resize( peek.width, peek.height );
-
-	// receive the packet
-	received = recv( this->socketFD, (PointIR_Frame*)frame, sizeof(PointIR_Frame)+frame.size(), 0 );
-	if( -1 == received )
-		throw SYSTEM_ERROR( errno, "recv" );
-	if( sizeof(PointIR_Frame)+frame.size() != (size_t)received )
-		throw RUNTIME_ERROR( "too few data received" );
-	return true;
+	return this->pImpl->receiveFrame( frame );
 }
 
 
