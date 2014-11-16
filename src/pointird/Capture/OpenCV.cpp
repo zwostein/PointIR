@@ -108,11 +108,15 @@ bool OpenCV::advanceFrame( bool block, float timeoutSeconds )
 
 	bool ret = this->pImpl->videoCapture->grab();
 
-	// exit if we played a file
 	if( this->pImpl->fileName.empty() )
 		return ret;
 	else
-		exit(0);
+	{
+		if( !ret ) // exit if we played a file to the end
+			exit(0);
+		else
+			return true;
+	}
 }
 
 
