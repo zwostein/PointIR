@@ -162,18 +162,19 @@ bool Processor::isProcessing() const
 
 void Processor::processFrame()
 {
+	if( !this->isProcessing() )
+		return;
+
 	TIMEFRAMEBEGIN();
 
 	TIME( total );
 	TIMESTART( total );
 
-	if( !this->isProcessing() )
-		return;
-
 	TIME( advanceFrame );
 	TIMESTART( advanceFrame );
 	if( !this->capture.advanceFrame() )
 	{
+		TIMEFRAMEEND();
 		std::cerr << "Processor: Could not get next frame.\n";
 		return;
 	}
@@ -182,6 +183,7 @@ void Processor::processFrame()
 	TIMESTART( retrieveFrame );
 	if( !this->capture.retrieveFrame( this->frame ) )
 	{
+		TIMEFRAMEEND();
 		std::cerr << "Processor: Could not retrieve frame.\n";
 		return;
 	}
