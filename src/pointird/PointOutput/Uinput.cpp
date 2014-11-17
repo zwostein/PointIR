@@ -17,7 +17,7 @@
  * along with PointIR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _POINTOUTPUT_UINPUT__LIVEDEBUG_
+//#define _POINTOUTPUT_UINPUT__LIVEDEBUG_
 
 
 #include "Uinput.hpp"

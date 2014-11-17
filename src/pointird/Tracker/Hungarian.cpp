@@ -110,7 +110,7 @@ void Hungarian::assignIDs( const PointIR::PointArray & previousPoints, const std
                            const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
                            std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )
 {
-	int A[MAXPOINTS*MAXPOINTS], *row;
+	int A[MAXPOINTS*MAXPOINTS];
 
 	int rows = currentPoints.size() > MAXPOINTS ? MAXPOINTS : currentPoints.size();
 	int cols = previousPoints.size() > MAXPOINTS ? MAXPOINTS : previousPoints.size();
@@ -118,7 +118,7 @@ void Hungarian::assignIDs( const PointIR::PointArray & previousPoints, const std
 	// setup distance matrix for contact matching
 	for( int j = 0; j < rows; j++ )
 	{
-		row = A + currentPoints.size() * j;
+		int * row = A + cols * j;
 		for( int i = 0; i < cols; i++ )
 			row[i] = toDist2( currentPoints[i].x - previousPoints[j].x, currentPoints[i].y - previousPoints[j].y );
 	}
@@ -146,10 +146,10 @@ void Hungarian::assignIDs( const PointIR::PointArray & previousPoints, const std
 
 	// map previous indices to current indices if they still exist and mark IDs unused if they disappeared
 	previousToCurrent.resize( previousPoints.size() );
-	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); previousIdx++ )
+	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); ++previousIdx )
 	{
 		previousToCurrent[previousIdx] = -1;
-		for( unsigned int currentIdx = 0; currentIdx < currentToPrevious.size(); currentIdx++ )
+		for( unsigned int currentIdx = 0; currentIdx < currentToPrevious.size(); ++currentIdx )
 		{
 			if( currentToPrevious[currentIdx] == (int)previousIdx )
 			{

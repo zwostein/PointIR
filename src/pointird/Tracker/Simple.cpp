@@ -59,13 +59,13 @@ public:
 		this->elements.resize( width * height );
 	}
 
-	T & operator()( unsigned int x, unsigned int y )
+	inline T & operator()( unsigned int x, unsigned int y )
 	{
 		assert( x < width && y < height );
 		return elements[ width * y + x ];
 	}
 
-	const T & operator()( unsigned int x, unsigned int y ) const
+	inline const T & operator()( unsigned int x, unsigned int y ) const
 	{
 		assert( x < width && y < height );
 		return elements[ width * y + x ];
@@ -132,22 +132,23 @@ unsigned int Simple::getMaxID() const
 
 //TODO: maybe use the Hungary Algorithm instead
 void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
-                         const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
-                         std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )
+                        const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
+                        std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )
 {
 	// build distance matrix and mark best matches for each point
 	currentToPrevious.resize( currentPoints.size() );
-	this->pImpl->distancesCurrentPrevious.resize( currentPoints.size(), previousPoints.size() );
+	Matrix< PointIR::Point::Component > & matrix = this->pImpl->distancesCurrentPrevious;
+	matrix.resize( currentPoints.size(), previousPoints.size() );
 	for( unsigned int currentIdx = 0; currentIdx < currentPoints.size(); ++currentIdx )
 	{
 		int bestMatchIndex = -1;
 		for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); ++previousIdx )
 		{
 			PointIR::Point::Component distance = currentPoints[currentIdx].squaredDistance( previousPoints[previousIdx] );
-			this->pImpl->distancesCurrentPrevious( currentIdx, previousIdx ) = distance;
+			matrix( currentIdx, previousIdx ) = distance;
 			if( bestMatchIndex >= 0 )
 			{
-				if( distance < this->pImpl->distancesCurrentPrevious( currentIdx, bestMatchIndex ) )
+				if( distance < matrix( currentIdx, bestMatchIndex ) )
 					bestMatchIndex = previousIdx;
 			} else {
 				bestMatchIndex = previousIdx;
@@ -191,10 +192,10 @@ void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::v
 
 	// map previous indices to current indices if they still exist and mark IDs unused if they disappeared
 	previousToCurrent.resize( previousPoints.size() );
-	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); previousIdx++ )
+	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); ++previousIdx )
 	{
 		previousToCurrent[previousIdx] = -1;
-		for( unsigned int currentIdx = 0; currentIdx < currentToPrevious.size(); currentIdx++ )
+		for( unsigned int currentIdx = 0; currentIdx < currentToPrevious.size(); ++currentIdx )
 		{
 			if( currentToPrevious[currentIdx] == (int)previousIdx )
 			{
