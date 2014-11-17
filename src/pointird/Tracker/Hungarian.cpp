@@ -123,17 +123,14 @@ void Hungarian::assignIDs( const PointIR::PointArray & previousPoints, const std
 			row[i] = toDist2( currentPoints[i].x - previousPoints[j].x, currentPoints[i].y - previousPoints[j].y );
 	}
 
-	// resize and fill unused values if there are more points than we can handle
-	currentToPrevious.resize( currentPoints.size() );
-	if( currentToPrevious.size() > MAXPOINTS )
-		for( unsigned int i = MAXPOINTS; i < currentToPrevious.size(); i++ )
-			currentToPrevious[i] = -1;
+	// resize and fill unused values
+	currentToPrevious.resize( currentPoints.size(), -1 );
 
 	// apply algorithm
 	ixoptimal( currentToPrevious.data(), A, rows, cols );
 
 	// assign IDs to new points
-	currentIDs.resize( currentPoints.size() );
+	currentIDs.resize( currentPoints.size(), -1 );
 	for( unsigned int currentIdx = 0; currentIdx < currentIDs.size(); ++currentIdx )
 	{
 		if( currentToPrevious[currentIdx] < 0 || (int)previousIDs.size() <= currentToPrevious[currentIdx] )
@@ -145,7 +142,7 @@ void Hungarian::assignIDs( const PointIR::PointArray & previousPoints, const std
 	}
 
 	// map previous indices to current indices if they still exist and mark IDs unused if they disappeared
-	previousToCurrent.resize( previousPoints.size() );
+	previousToCurrent.resize( previousPoints.size(), -1 );
 	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); ++previousIdx )
 	{
 		previousToCurrent[previousIdx] = -1;

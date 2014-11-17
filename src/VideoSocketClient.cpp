@@ -90,8 +90,12 @@ public:
 		strcpy( remoteAddr.sun_path, this->socketName.c_str() );
 		size_t len = strlen(remoteAddr.sun_path) + sizeof(remoteAddr.sun_family);
 		if( -1 == connect( this->socketFD, (struct sockaddr *)&remoteAddr, len ) )
+		{
 //			throw SYSTEM_ERROR( errno, "connect" );
+			close( this->socketFD );
+			this->socketFD = 0;
 			return false;
+		}
 
 		return true;
 	}
@@ -114,7 +118,12 @@ public:
 				throw SYSTEM_ERROR( errno, "recv" );
 		}
 		if( sizeof(peek) != received )
-			throw RUNTIME_ERROR( "too few data received" );
+		{
+//			throw RUNTIME_ERROR( "too few data received" );
+			close( this->socketFD );
+			this->socketFD = 0;
+			return false;
+		}
 
 		// resize packet buffer if needed
 		frame.resize( peek.width, peek.height );
@@ -124,7 +133,12 @@ public:
 		if( -1 == received )
 			throw SYSTEM_ERROR( errno, "recv" );
 		if( sizeof(PointIR_Frame)+frame.size() != (size_t)received )
-			throw RUNTIME_ERROR( "too few data received" );
+		{
+//			throw RUNTIME_ERROR( "too few data received" );
+			close( this->socketFD );
+			this->socketFD = 0;
+			return false;
+		}
 		return true;
 	}
 };

@@ -136,7 +136,7 @@ void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::v
                         std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )
 {
 	// build distance matrix and mark best matches for each point
-	currentToPrevious.resize( currentPoints.size() );
+	currentToPrevious.resize( currentPoints.size(), -1 );
 	Matrix< PointIR::Point::Component > & matrix = this->pImpl->distancesCurrentPrevious;
 	matrix.resize( currentPoints.size(), previousPoints.size() );
 	for( unsigned int currentIdx = 0; currentIdx < currentPoints.size(); ++currentIdx )
@@ -179,7 +179,7 @@ void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::v
 	}
 
 	// assign IDs to new points
-	currentIDs.resize( currentPoints.size() );
+	currentIDs.resize( currentPoints.size(), -1 );
 	for( unsigned int currentIdx = 0; currentIdx < currentIDs.size(); ++currentIdx )
 	{
 		if( currentToPrevious[currentIdx] < 0 || (int)previousIDs.size() <= currentToPrevious[currentIdx] )
@@ -191,7 +191,7 @@ void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::v
 	}
 
 	// map previous indices to current indices if they still exist and mark IDs unused if they disappeared
-	previousToCurrent.resize( previousPoints.size() );
+	previousToCurrent.resize( previousPoints.size(), -1 );
 	for( unsigned int previousIdx = 0; previousIdx < previousPoints.size(); ++previousIdx )
 	{
 		previousToCurrent[previousIdx] = -1;

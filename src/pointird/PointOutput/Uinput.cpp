@@ -94,9 +94,6 @@ static int xioctl( int fd, unsigned long int request )
 Uinput::Uinput( const TrackerFactory * trackerFactory ) :
 	pImpl( new Impl )
 {
-	if( trackerFactory )
-		this->pImpl->tracker = trackerFactory->newTracker();
-
 	this->pImpl->fd = open( uinputDeviceName.c_str(), O_WRONLY | O_NONBLOCK );
 	if( this->pImpl->fd < 0 )
 		throw SYSTEM_ERROR( errno, "open(\""+uinputDeviceName+"\",O_WRONLY|O_NONBLOCK)" );
@@ -110,10 +107,14 @@ Uinput::Uinput( const TrackerFactory * trackerFactory ) :
 	uidev.id.product = 0x1; //TODO: choose something different?
 	uidev.id.version = 1;
 
+	if( trackerFactory )
+		this->pImpl->tracker = trackerFactory->newTracker( 0xfff );
+	//TODO: the tracker's maximum ID is also used as the maximum ABS_MT_SLOT value below
+	//      interesting fact: a value too high might cause the kernel to freeze! Oo
 	if( this->pImpl->tracker )
 	{
 		uidev.absmax[ABS_MT_SLOT] = this->pImpl->tracker->getMaxID();
-		uidev.absmax[ABS_MT_TRACKING_ID] = 0xffff;
+		uidev.absmax[ABS_MT_TRACKING_ID] = this->pImpl->tracker->getMaxID();
 	}
 
 	uidev.absmax[ABS_MT_POSITION_X] = resX;
@@ -391,4 +392,5 @@ void Uinput::Impl::outputPointsTypeB( const PointIR::PointArray & currentPoints 
 #ifdef _POINTOUTPUT_UINPUT__LIVEDEBUG_
 	std::cerr << "\n";
 #endif
+
 }
