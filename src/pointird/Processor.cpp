@@ -172,7 +172,7 @@ void Processor::processFrame()
 
 	TIME( advanceFrame );
 	TIMESTART( advanceFrame );
-	if( !this->capture.advanceFrame() )
+	if( !this->capture.advanceFrame( true, 1.0f ) )
 	{
 		TIMEFRAMEEND();
 		std::cerr << "Processor: Could not get next frame.\n";
