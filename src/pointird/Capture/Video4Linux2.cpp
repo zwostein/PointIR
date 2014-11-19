@@ -393,7 +393,7 @@ bool Video4Linux2::advanceFrame( bool block, float timeoutSeconds )
 
 			if( 0 == r )
 			{
-				std::cerr << "\"" << this->device << "\": " << "timed out\n";
+				std::cerr << "Capture::Video4Linux2: \"" << "\"" << this->device << "\": " << "timed out\n";
 				return false;
 			}
 			break;
