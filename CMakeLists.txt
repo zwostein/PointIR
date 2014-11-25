@@ -220,6 +220,9 @@ endif()
 set( CPACK_DEBIAN_PACKAGE_SECTION util )
 
 if( WIN32 )
+	if( "${CMAKE_SIZEOF_VOID_P}" EQUAL "8" )
+		set( CPACK_SYSTEM_NAME win64 )
+	endif()
 	install( PROGRAMS "${CMAKE_FIND_ROOT_PATH}/bin/dbus-daemon.exe" DESTINATION bin)
 endif()
 
