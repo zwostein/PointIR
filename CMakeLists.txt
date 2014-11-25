@@ -219,6 +219,10 @@ endif()
 
 set( CPACK_DEBIAN_PACKAGE_SECTION util )
 
+if( WIN32 )
+	install( PROGRAMS "${CMAKE_FIND_ROOT_PATH}/bin/dbus-daemon.exe" DESTINATION bin)
+endif()
+
 include( CPack )
 
 ################################################################
