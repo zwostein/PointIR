@@ -21,6 +21,7 @@
 #include "AUnprojector.hpp"
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 
@@ -30,7 +31,15 @@ using namespace Unprojector;
 
 CalibrationDataFile::CalibrationDataFile( AUnprojector & unprojector, const std::string & directory ) : unprojector(unprojector)
 {
-	this->filename = directory + "/PointIR.calib";
+	std::stringstream ss;
+	if( !directory.empty() )
+	{
+		ss << directory;
+		if( directory.back() != '/' )
+			ss << '/';
+	}
+	ss << "PointIR.calib";
+	this->filename = ss.str();
 }
 
 

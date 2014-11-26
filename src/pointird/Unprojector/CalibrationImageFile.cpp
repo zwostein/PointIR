@@ -46,7 +46,13 @@ CalibrationImageFile::CalibrationImageFile( AAutoUnprojector & unprojector, cons
 	unprojector(unprojector), width(width), height(height)
 {
 	std::stringstream ss;
-	ss << directory << "PointIR." << this->width << "x" << this->height << ".png";
+	if( !directory.empty() )
+	{
+		ss << directory;
+		if( directory.back() != '/' )
+			ss << '/';
+	}
+	ss << "PointIR." << this->width << "x" << this->height << ".png";
 	this->filename = ss.str();
 }
 
