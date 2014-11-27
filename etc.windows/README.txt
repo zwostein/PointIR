@@ -1,13 +1,6 @@
-To run pointird in windows, a dbus daemon must be running.
-This is a brief description on how to get it working:
+To run pointird in windows, run PointIR.bat.
+This will start a dbus daemon that is used by the calibration utility.
 
-First start a system message bus instance using the provided example configuration file:
-# dbus-daemon.exe --config-file=system.conf
-
-Then export the system bus address as an environment variable:
-# set DBUS_SYSTEM_BUS_ADDRESS=tcp:host=127.0.0.1,port=1234
-
-Now pointird should be able to connect to the system bus:
-# pointird.exe
-
-Run a calibration tool. (don't forget to export DBUS_SYSTEM_BUS_ADDRESS for this one, too)
+If you have more than one webcam attached it may be necessary to edit PointIR.bat.
+For example append "-d 1" to the command line to use the second camera.
+More available options can be viewed by executing "pointird --help".

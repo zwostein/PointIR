@@ -139,7 +139,7 @@ if( UNIX )
 	install( DIRECTORY etc/ DESTINATION share/PointIR/ExampleConfiguration/etc )
 endif()
 if( WIN32 )
-	install( DIRECTORY etc.windows/ DESTINATION ExampleConfiguration )
+	install( DIRECTORY etc.windows/ DESTINATION bin )
 endif()
 ################################################################
 
