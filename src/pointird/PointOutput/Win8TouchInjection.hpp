@@ -41,6 +41,7 @@ public:
 
 	virtual void outputPoints( const PointIR::PointArray & pointArray ) override;
 
+	static bool isAvailable();
 private:
 	class Impl;
 	std::unique_ptr< Impl > pImpl;

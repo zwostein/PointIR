@@ -36,6 +36,20 @@
 using namespace PointOutput;
 
 
+bool Win8TouchInjection::isAvailable()
+{
+	try
+	{
+		Win8TouchInjection * dummy = new Win8TouchInjection( TrackerFactory() );
+		return dummy;
+	}
+	catch(...)
+	{
+		return false;
+	}
+}
+
+
 class Win8TouchInjection::Impl
 {
 public:
@@ -92,7 +106,6 @@ static void clampToScreen( POINT & p, int screenWidth, int screenHeight )
 	else if( p.y >= screenHeight )
 		p.y = screenHeight-1;
 }
-
 
 
 void Win8TouchInjection::outputPoints( const PointIR::PointArray & currentPoints )

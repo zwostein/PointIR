@@ -103,8 +103,13 @@ int main( int argc, char ** argv )
 			case SDL_FINGERDOWN:
 				{
 					Touch t;
+#ifdef __unix__
 					t.point.x = e.tfinger.x;
 					t.point.y = e.tfinger.y;
+#else
+					t.point.x = e.tfinger.x * w;
+					t.point.y = e.tfinger.y * h;
+#endif
 					t.r = rand() % 128 + 127;
 					t.g = rand() % 128 + 127;
 					t.b = rand() % 128 + 127;
@@ -120,8 +125,13 @@ int main( int argc, char ** argv )
 					if( i != touches.end() )
 					{
 						Touch & t = i->second;
+#ifdef __unix__
 						t.point.x = e.tfinger.x;
 						t.point.y = e.tfinger.y;
+#else
+						t.point.x = e.tfinger.x * w;
+						t.point.y = e.tfinger.y * h;
+#endif
 					}
 				}
 				break;

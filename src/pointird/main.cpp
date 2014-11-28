@@ -27,6 +27,8 @@
 #ifdef __unix__
 	#include <signal.h>
 	#include <sys/wait.h>
+#else
+	#include "PointOutput/Win8TouchInjection.hpp"
 #endif
 
 #include <tclap/CmdLine.h>
@@ -158,8 +160,13 @@ int main( int argc, char ** argv )
 #endif
 
 #ifndef __unix__
-	#if defined POINTIR_POINTIR_WIN8TOUCHINJECTION
-	outputNames.push_back( "win8" );
+	#if defined POINTIR_WIN8TOUCHINJECTION
+	if( PointOutput::Win8TouchInjection::isAvailable() )
+		outputNames.push_back( "win8" );
+		#if defined POINTIR_TUIO
+	else
+		outputNames.push_back( "tuio" );
+		#endif
 	#elif defined POINTIR_TUIO
 	outputNames.push_back( "tuio" );
 	#endif
