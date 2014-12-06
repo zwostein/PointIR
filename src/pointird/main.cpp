@@ -232,30 +232,30 @@ int main( int argc, char ** argv )
 
 		TCLAP::ValueArg<int> widthArg(
 			"", "width",
-			"Width of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.width),
+			"Width of captured video stream. If the device does not support the given resolution, the nearest possible value may be used.\nDefaults to " + std::to_string(captureFactory.width),
 			false, captureFactory.width, "int", cmd );
 
 		TCLAP::ValueArg<int> heigthArg(
 			"", "height",
-			"Height of captured video stream. If the device does not support the given resolution, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.height),
+			"Height of captured video stream. If the device does not support the given resolution, the nearest possible value may be used.\nDefaults to " + std::to_string(captureFactory.height),
 			false, captureFactory.height, "int", cmd );
 
 		TCLAP::ValueArg<float> fpsArg(
 			"", "fps",
-			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value is used.\nDefaults to " + std::to_string(captureFactory.fps),
+			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value may be used.\nDefaults to " + std::to_string(captureFactory.fps),
 			false, captureFactory.fps, "float", cmd );
 
 		std::vector< std::string > availableTrackerNames = outputFactory.trackerFactory.getAvailableTrackerNames();
 		TCLAP::ValuesConstraint<std::string> trackersArgConstraint( availableTrackerNames );
 		TCLAP::ValueArg<std::string> trackerArg(
-			"t", "tracker",
+			"", "tracker",
 			"The tracker used for outputs that need identifiiable contact points.\nDefaults to \"" + outputFactory.trackerFactory.getDefaultTrackerName() + "\"",
 			false, outputFactory.trackerFactory.getDefaultTrackerName(), &trackersArgConstraint, cmd );
 
 		std::vector< std::string > availableCaptureNames = captureFactory.getAvailableCaptureNames();
 		TCLAP::ValuesConstraint<std::string> capturesArgConstraint( availableCaptureNames );
 		TCLAP::ValueArg<std::string> captureArg(
-			"c", "capture",
+			"", "capture",
 			"The capture module used to retrieve the video stream.\nDefaults to \"" + captureName + "\"",
 			false, captureName, &capturesArgConstraint, cmd );
 
@@ -268,7 +268,11 @@ int main( int argc, char ** argv )
 			defaultOutputsAsArgument.pop_back();
 		TCLAP::MultiArg<std::string> outputsArg(
 			"o",  "output",
-			"Adds one or more output modules.\nSpecifying this will override the default (" + defaultOutputsAsArgument + ")",
+			"Adds one or more output modules.\n"
+#ifdef POINTIR_TUIO
+			"For the TUIO protocol you can set the server address with the POINTIR_TUIO_ADDRESS environment variable, e.g. \"osc.udp://127.0.0.1:3331\".\n"
+#endif
+			"Specifying this will override the default (" + defaultOutputsAsArgument + ")",
 			false, &outputsArgConstraint, cmd );
 
 		std::vector< std::string > availableControllerNames = controllerFactory.getAvailableControllerNames();
@@ -279,8 +283,12 @@ int main( int argc, char ** argv )
 		if( defaultControllersAsArgument.size() )
 			defaultControllersAsArgument.pop_back();
 		TCLAP::MultiArg<std::string> contollersArg(
-			"x",  "controller",
-			"Adds one or more controller modules.\nSpecifying this will override the default (" + defaultControllersAsArgument + ")",
+			"",  "controller",
+			"Adds one or more controller modules.\n"
+#ifdef POINTIR_DBUS
+			"For D-Bus you may have to set the DBUS_SYSTEM_BUS_ADDRESS environment variable to e.g. \"tcp:host=127.0.0.1,port=1234\".\n"
+#endif
+			"Specifying this will override the default (" + defaultControllersAsArgument + ")",
 			false, &controllersArgConstraint, cmd );
 
 		cmd.parse( argc, argv );
