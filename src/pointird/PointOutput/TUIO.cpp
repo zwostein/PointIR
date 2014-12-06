@@ -44,7 +44,7 @@ public:
 	uint32_t frameID = 0;
 	lo_timetag lastTimetag;
 
-	Tracker::ATracker * tracker;
+	Tracker::ATracker * tracker = nullptr;
 	PointIR::PointArray previousPoints;
 	std::vector< int > previousIDs;
 	std::vector< int > currentIDs;
@@ -56,19 +56,21 @@ public:
 TUIO::TUIO( const TrackerFactory & trackerFactory, std::string address ) :
 	pImpl( new Impl )
 {
-	this->pImpl->tracker = trackerFactory.newTracker();
-
 	this->pImpl->tuioAddr = lo_address_new_from_url( address.c_str() );
 	if( !this->pImpl->tuioAddr )
 		throw RUNTIME_ERROR("Could not start OSC/TUIO server");
-	std::cout << "PointOutput::TUIO: Started server on \"" << lo_address_get_url(this->pImpl->tuioAddr) << "\"\n";
+
+	this->pImpl->tracker = trackerFactory.newTracker();
+
+	char * addr = lo_address_get_url(this->pImpl->tuioAddr);
+	std::cout << "PointOutput::TUIO: Started server on \"" << addr << "\"\n";
+	free( addr );
 }
 
 
 TUIO::~TUIO()
 {
-	if( this->pImpl->tracker )
-		delete this->pImpl->tracker;
+	delete this->pImpl->tracker;
 
 	lo_address_free( this->pImpl->tuioAddr );
 }
@@ -132,7 +134,7 @@ void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 	if( lo_send_bundle( this->pImpl->tuioAddr, bundle ) == -1 )
 		std::cerr << "PointOutput::TUIO: OSC error " << lo_address_errno(this->pImpl->tuioAddr) <<": " << lo_address_errstr(this->pImpl->tuioAddr) << "\n";
 
-	lo_bundle_free( bundle ) ;
+	lo_bundle_free_recursive( bundle ) ;
 
 	this->pImpl->previousPoints = currentPoints;
 	this->pImpl->previousIDs = this->pImpl->currentIDs;
