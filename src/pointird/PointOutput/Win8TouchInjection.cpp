@@ -36,23 +36,24 @@
 using namespace PointOutput;
 
 
-bool Win8TouchInjection::isAvailable()
-{
-	try
-	{
-		Win8TouchInjection * dummy = new Win8TouchInjection( TrackerFactory() );
-		return dummy;
-	}
-	catch(...)
-	{
-		return false;
-	}
-}
-
-
 class Win8TouchInjection::Impl
 {
 public:
+	Impl()
+	{
+		HMODULE hMod = LoadLibraryW( L"user32.dll" );
+		if( !hMod )
+			throw RUNTIME_ERROR( "Could not load user32.dll" );
+
+		// initialize function pointers
+		this->InitializeTouchInjection = (InitializeTouchInjectionPtr)GetProcAddress( hMod, "InitializeTouchInjection" );
+		if( !this->InitializeTouchInjection )
+			throw RUNTIME_ERROR( "Touch Injection API unavailable! (InitializeTouchInjection not found in user32.dll)" );
+		this->InjectTouchInput = (InjectTouchInputPtr)GetProcAddress( hMod, "InjectTouchInput" );
+		if( !this->InjectTouchInput )
+			throw RUNTIME_ERROR( "Touch Injection API unavailable! (InjectTouchInput not found in user32.dll)" );
+	}
+
 	InitializeTouchInjectionPtr InitializeTouchInjection = nullptr;
 	InjectTouchInputPtr InjectTouchInput = nullptr;
 
@@ -65,22 +66,25 @@ public:
 };
 
 
+bool Win8TouchInjection::isAvailable()
+{
+	try
+	{
+		// this will try to initialize function pointers
+		Impl impl;
+		return impl.InitializeTouchInjection;
+	}
+	catch(...)
+	{
+		return false;
+	}
+}
+
+
 Win8TouchInjection::Win8TouchInjection( const TrackerFactory & trackerFactory ) :
 	pImpl( new Impl )
 {
 	this->pImpl->tracker = trackerFactory.newTracker( MAX_TOUCH_COUNT );
-
-	HMODULE hMod = LoadLibraryW( L"user32.dll" );
-	if( !hMod )
-		throw RUNTIME_ERROR( "Could not load user32.dll" );
-
-	// initialize function pointers
-	this->pImpl->InitializeTouchInjection = (InitializeTouchInjectionPtr)GetProcAddress( hMod, "InitializeTouchInjection" );
-	if( !this->pImpl->InitializeTouchInjection )
-		throw RUNTIME_ERROR( "Touch Injection API unavailable! (InitializeTouchInjection not found in user32.dll)" );
-	this->pImpl->InjectTouchInput = (InjectTouchInputPtr)GetProcAddress( hMod, "InjectTouchInput" );
-	if( !this->pImpl->InjectTouchInput )
-		throw RUNTIME_ERROR( "Touch Injection API unavailable! (InjectTouchInput not found in user32.dll)" );
 
 	if( !this->pImpl->InitializeTouchInjection( this->pImpl->tracker->getMaxID(), TOUCH_FEEDBACK_DEFAULT ) )
 		throw RUNTIME_ERROR( "InitializeTouchInjection failure. GetLastError=" + std::to_string(GetLastError()) );
@@ -91,6 +95,7 @@ Win8TouchInjection::Win8TouchInjection( const TrackerFactory & trackerFactory ) 
 
 Win8TouchInjection::~Win8TouchInjection()
 {
+	delete this->pImpl->tracker;
 }
 
 
