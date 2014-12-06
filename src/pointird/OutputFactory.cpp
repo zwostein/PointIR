@@ -77,7 +77,13 @@ OutputFactory::OutputFactory() : pImpl( new Impl )
 #endif
 #ifdef POINTIR_TUIO
 	this->pImpl->pointOutputMap.insert( { "tuio", [this] ()
-		{ return new PointOutput::TUIO( this->trackerFactory ); }
+		{
+			char * addr = getenv("POINTIR_TUIO_ADDRESS");
+			if( addr )
+				return new PointOutput::TUIO( this->trackerFactory, addr );
+			else
+				return new PointOutput::TUIO( this->trackerFactory );
+		}
 	} );
 #endif
 #ifdef POINTIR_WIN8TOUCHINJECTION
