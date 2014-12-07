@@ -90,29 +90,44 @@ bool DBusClient::getBool( const std::string & interface, const std::string & met
 	if( !msg )
 		throw RUNTIME_ERROR( "dbus_message_new_method_call failed" );
 
-	// append arguments
-	DBusMessageIter args;
-	dbus_message_iter_init_append( msg, &args );
+	try
+	{
+		// append arguments
+		DBusMessageIter args;
+		dbus_message_iter_init_append( msg, &args );
 
-	// send message and get a handle for a reply
-	DBusMessage * reply = dbus_connection_send_with_reply_and_block( this->dBusConnection, msg, -1, &this->dBusError ); // -1 is default timeout
-	if( !reply )
-		throw RUNTIME_ERROR( "dbus_connection_send_with_reply_and_block failed: " + std::string(this->dBusError.message) );
+		// send message and get a handle for a reply
+		DBusMessage * reply = dbus_connection_send_with_reply_and_block( this->dBusConnection, msg, -1, &this->dBusError ); // -1 is default timeout
+		if( !reply )
+			throw RUNTIME_ERROR( "dbus_connection_send_with_reply_and_block failed: " + std::string(this->dBusError.message) );
 
-	// handle arguments in reply
-	DBusBasicValue value;
-	if( !dbus_message_iter_init( reply, &args ) )
-		throw RUNTIME_ERROR( "Expected one argument in reply" );
-	if( dbus_message_iter_get_arg_type( &args ) != DBUS_TYPE_BOOLEAN )
-		throw RUNTIME_ERROR( "Expected argument of type bool" );
-	dbus_message_iter_get_basic( &args, &value );
-	bool result = value.bool_val;
+		try
+		{
+			// handle arguments in reply
+			DBusBasicValue value;
+			if( !dbus_message_iter_init( reply, &args ) )
+				throw RUNTIME_ERROR( "Expected one argument in reply" );
+			if( dbus_message_iter_get_arg_type( &args ) != DBUS_TYPE_BOOLEAN )
+				throw RUNTIME_ERROR( "Expected argument of type bool" );
+			dbus_message_iter_get_basic( &args, &value );
+			bool result = value.bool_val;
 
-	// free messages
-	dbus_message_unref( msg );
-	dbus_message_unref( reply );
-
-	return result;
+			// free messages
+			dbus_message_unref( reply );
+			dbus_message_unref( msg );
+			return result;
+		}
+		catch( ... )
+		{
+			dbus_message_unref( reply );
+			throw;
+		}
+	}
+	catch( ... )
+	{
+		dbus_message_unref( msg );
+		throw;
+	}
 }
 
 
@@ -127,36 +142,52 @@ std::string DBusClient::getCalibrationImageFile( unsigned int width, unsigned in
 	if( !msg )
 		throw RUNTIME_ERROR( "dbus_message_new_method_call failed" );
 
-	// append arguments
-	DBusMessageIter args;
-	dbus_message_iter_init_append( msg, &args );
+	try
+	{
+		// append arguments
+		DBusMessageIter args;
+		dbus_message_iter_init_append( msg, &args );
 
-	DBusBasicValue value;
-	value.u32 = width;
-	if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_UINT32, &value ) )
-		throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
-	value.u32 = height;
-	if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_UINT32, &value ) )
-		throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
+		DBusBasicValue value;
+		value.u32 = width;
+		if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_UINT32, &value ) )
+			throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
+		value.u32 = height;
+		if( !dbus_message_iter_append_basic( &args, DBUS_TYPE_UINT32, &value ) )
+			throw RUNTIME_ERROR( "dbus_message_iter_append_basic failed" );
 
-	// send message and get a handle for a reply
-	DBusMessage * reply = dbus_connection_send_with_reply_and_block( this->dBusConnection, msg, -1, &this->dBusError ); // -1 is default timeout
-	if( !reply )
-		throw RUNTIME_ERROR( "dbus_connection_send_with_reply_and_block failed: " + std::string(this->dBusError.message) );
+		// send message and get a handle for a reply
+		DBusMessage * reply = dbus_connection_send_with_reply_and_block( this->dBusConnection, msg, -1, &this->dBusError ); // -1 is default timeout
+		if( !reply )
+			throw RUNTIME_ERROR( "dbus_connection_send_with_reply_and_block failed: " + std::string(this->dBusError.message) );
 
-	// handle arguments in reply
-	if( !dbus_message_iter_init( reply, &args ) )
-		throw RUNTIME_ERROR( "Expected one argument in reply" );
-	if( dbus_message_iter_get_arg_type( &args ) != DBUS_TYPE_STRING )
-		throw RUNTIME_ERROR( "Expected argument of type string" );
-	dbus_message_iter_get_basic( &args, &value );
-	std::string filename( value.str );
+		try
+		{
+			// handle arguments in reply
+			if( !dbus_message_iter_init( reply, &args ) )
+				throw RUNTIME_ERROR( "Expected one argument in reply" );
+			if( dbus_message_iter_get_arg_type( &args ) != DBUS_TYPE_STRING )
+				throw RUNTIME_ERROR( "Expected argument of type string" );
+			dbus_message_iter_get_basic( &args, &value );
+			std::string filename( value.str );
 
-	// free messages
-	dbus_message_unref( msg );
-	dbus_message_unref( reply );
+			// free messages
+			dbus_message_unref( msg );
+			dbus_message_unref( reply );
 
-	return filename;
+			return filename;
+		}
+		catch( ... )
+		{
+			dbus_message_unref( reply );
+			throw;
+		}
+	}
+	catch( ... )
+	{
+		dbus_message_unref( msg );
+		throw;
+	}
 }
 
 

@@ -76,7 +76,10 @@ public:
 
 		this->socketFD = socket( AF_UNIX, SOCK_SEQPACKET, 0 );
 		if( -1 == this->socketFD )
+		{
+			this->socketFD = 0;
 			throw SYSTEM_ERROR( errno, "socket" );
+		}
 
 		// set local socket nonblocking
 		int flags = fcntl( this->socketFD, F_GETFL, 0 );
@@ -115,7 +118,11 @@ public:
 			if( EAGAIN == errno || EWOULDBLOCK == errno )
 				return false;
 			else
+			{
+				close( this->socketFD );
+				this->socketFD = 0;
 				throw SYSTEM_ERROR( errno, "recv" );
+			}
 		}
 		if( sizeof(peek) != received )
 		{
