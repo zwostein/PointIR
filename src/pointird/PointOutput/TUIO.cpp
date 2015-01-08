@@ -129,12 +129,13 @@ void TUIO::outputPoints( const PointIR::PointArray & currentPoints )
 	msg = lo_message_new();
 	lo_message_add_string( msg, "fseq" );
 	lo_message_add_int32( msg, this->pImpl->frameID++ );
-	lo_bundle_add_message( bundle, "/tuio/2Dcur", msg ) ;
+	lo_bundle_add_message( bundle, "/tuio/2Dcur", msg );
 
 	if( lo_send_bundle( this->pImpl->tuioAddr, bundle ) == -1 )
 		std::cerr << "PointOutput::TUIO: OSC error " << lo_address_errno(this->pImpl->tuioAddr) <<": " << lo_address_errstr(this->pImpl->tuioAddr) << "\n";
 
-	lo_bundle_free_recursive( bundle ) ;
+	// TODO: obsolete but lo_bundle_free_recursive is not yet available everywhere (e.g. raspbian)
+	lo_bundle_free_messages( bundle );
 
 	this->pImpl->previousPoints = currentPoints;
 	this->pImpl->previousIDs = this->pImpl->currentIDs;
