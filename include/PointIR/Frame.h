@@ -90,6 +90,9 @@ namespace PointIR
 		const uint8_t * getData()   const noexcept { return frame->data; }
 		uint8_t *       getData()         noexcept { return frame->data; }
 
+		const uint8_t & getAt( unsigned int x, unsigned int y ) const noexcept { return frame->data[ x + y * frame->width ]; }
+		uint8_t &       getAt( unsigned int x, unsigned int y )       noexcept { return frame->data[ x + y * frame->width ]; }
+
 		explicit operator const PointIR_Frame*() const noexcept { return frame; }
 		explicit operator PointIR_Frame*() noexcept { return frame; }
 

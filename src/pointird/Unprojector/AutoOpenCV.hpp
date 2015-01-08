@@ -41,7 +41,7 @@ public:
 	~AutoOpenCV();
 
 	virtual void unproject( uint8_t * greyImage, unsigned int width, unsigned int height ) const override;
-	virtual void unproject( PointIR::PointArray & pointArray ) const override;
+	virtual void unproject( PointIR::Point & point ) const override;
 
 	virtual std::vector< uint8_t > getRawCalibrationData() const override;
 	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) override;

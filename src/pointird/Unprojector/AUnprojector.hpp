@@ -22,16 +22,12 @@
 
 
 #include <PointIR/Frame.h>
+#include <PointIR/Point.h>
+#include <PointIR/PointArray.h>
 
 #include <stdint.h>
 
 #include <vector>
-
-
-namespace PointIR
-{
-	class PointArray;
-}
 
 
 namespace Unprojector
@@ -41,12 +37,20 @@ class AUnprojector
 {
 public:
 	virtual void unproject( uint8_t * greyImage, unsigned int width, unsigned int height ) const = 0;
-	virtual void unproject( PointIR::Frame & frame ) const { return unproject( frame.getData(), frame.getWidth(), frame.getHeight() ); }
-	virtual void unproject( PointIR::PointArray & pointArray ) const = 0;
+	virtual void unproject( PointIR::Frame & frame ) const
+	{
+		return unproject( frame.getData(), frame.getWidth(), frame.getHeight() );
+	}
+
+	virtual void unproject( PointIR::Point & point ) const = 0;
+	virtual void unproject( PointIR::PointArray & pointArray ) const
+	{
+		for( PointIR_Point & point : pointArray )
+			this->unproject( point );
+	}
 
 	virtual std::vector< uint8_t > getRawCalibrationData() const = 0;
 	virtual bool setRawCalibrationData( const std::vector< uint8_t > & data ) = 0;
-
 };
 
 }
