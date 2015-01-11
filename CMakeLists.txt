@@ -43,6 +43,7 @@ set( POINTIR_SOURCES
 	src/pointird/Unprojector/CalibrationDataFile.cpp
 	src/pointird/Unprojector/CalibrationImageFile.cpp
 	src/pointird/PointFilter/OffscreenFilter.cpp
+	src/pointird/PointFilter/LimitNumberFilter.cpp
 
 	src/pointird/Capture/OpenCV.cpp
 	src/pointird/PointDetector/OpenCV.cpp

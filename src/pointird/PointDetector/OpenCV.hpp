@@ -47,7 +47,7 @@ public:
 	const float & getMaxBoundingSize() const { return this->maxBoundingSize; }
 
 private:
-	uint8_t intensityThreshold = 128;
+	uint8_t intensityThreshold = 127;
 	bool boundingFilterEnabled = false;
 	float minBoundingSize = 0.0002f;
 	float maxBoundingSize = 0.125f;

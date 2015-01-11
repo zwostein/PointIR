@@ -130,7 +130,6 @@ unsigned int Simple::getMaxID() const
 }
 
 
-//TODO: maybe use the Hungary Algorithm instead
 void Simple::assignIDs( const PointIR::PointArray & previousPoints, const std::vector<int> & previousIDs,
                         const PointIR::PointArray & currentPoints, std::vector<int> & currentIDs,
                         std::vector<int> & previousToCurrent, std::vector<int> & currentToPrevious )

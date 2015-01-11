@@ -129,10 +129,10 @@ void Win8TouchInjection::outputPoints( const PointIR::PointArray & currentPoints
 	for( unsigned int i = 0; i < this->pImpl->previousToCurrent.size(); i++ )
 	{
 		if( this->pImpl->previousIDs[i] < 0 )
-			continue;
+			continue; // slot disabled
 
 		if( this->pImpl->previousToCurrent[i] >= 0 )
-			continue;
+			continue; // still exists in current frame
 
 		POINTER_TOUCH_INFO info = {0};
 		info.touchFlags = TOUCH_FLAG_NONE;

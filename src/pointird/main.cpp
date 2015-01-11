@@ -50,6 +50,7 @@
 #include "Unprojector/CalibrationImageFile.hpp"
 
 #include "PointFilter/OffscreenFilter.hpp"
+#include "PointFilter/LimitNumberFilter.hpp"
 #include "PointFilter/Chain.hpp"
 
 #include "Processor.hpp"
@@ -141,6 +142,9 @@ int main( int argc, char ** argv )
 
 	////////////////////////////////////////////////////////////////
 	// default daemon settings
+
+	unsigned int pointLimit = 0;
+	unsigned char detectorIntensityThreshold = 127;
 
 	captureFactory.fps = 30.0f;
 	captureFactory.width = 320;
@@ -245,6 +249,16 @@ int main( int argc, char ** argv )
 			"Frame rate of captured video stream. If the device does not support the given frame rate, the nearest possible value may be used.\nDefaults to " + std::to_string(captureFactory.fps),
 			false, captureFactory.fps, "float", cmd );
 
+		TCLAP::ValueArg<int> pointLimitArg(
+			"", "pointLimit",
+			"Limit the number of points for the output. 0 to disable.\nDefaults to " + std::to_string(pointLimit),
+			false, pointLimit, "int", cmd );
+
+		TCLAP::ValueArg<int> detectorIntensityThresholdArg(
+			"", "intensityThreshold",
+			"The luminosity threshold used to detect points in the video capture.\nDefaults to " + std::to_string((unsigned int)detectorIntensityThreshold),
+			false, detectorIntensityThreshold, "int", cmd );
+
 		std::vector< std::string > availableTrackerNames = outputFactory.trackerFactory.getAvailableTrackerNames();
 		TCLAP::ValuesConstraint<std::string> trackersArgConstraint( availableTrackerNames );
 		TCLAP::ValueArg<std::string> trackerArg(
@@ -295,14 +309,25 @@ int main( int argc, char ** argv )
 
 		calibrationHook.setBeginHook( calibrationBeginHookArg.getValue() );
 		calibrationHook.setEndHook( calibrationEndHookArg.getValue() );
+
 		outputFactory.trackerFactory.setDefaultTrackerName( trackerArg.getValue() );
+
 		captureName = captureArg.getValue();
+
 		captureFactory.deviceName = deviceNameArg.getValue();
 		captureFactory.width = widthArg.getValue();
 		captureFactory.height = heigthArg.getValue();
 		captureFactory.fps = fpsArg.getValue();
+
+		if( pointLimitArg.getValue() >= 0 )
+			pointLimit = pointLimitArg.getValue();
+
+		if( detectorIntensityThresholdArg.getValue() >= 0 )
+			detectorIntensityThreshold = detectorIntensityThresholdArg.getValue();
+
 		if( !outputsArg.getValue().empty() )
 			outputNames = outputsArg.getValue();
+
 		if( !contollersArg.getValue().empty() )
 			controllerNames = contollersArg.getValue();
 	}
@@ -326,7 +351,8 @@ int main( int argc, char ** argv )
 	}
 
 	PointDetector::OpenCV detector;
-	detector.setBoundingFilterEnabled( true );
+//	detector.setBoundingFilterEnabled( true );
+	detector.setIntensityThreshold( detectorIntensityThreshold );
 
 	Unprojector::AutoOpenCV unprojector;
 	Unprojector::CalibrationDataFile calibrationDataFile( unprojector );
@@ -336,6 +362,13 @@ int main( int argc, char ** argv )
 
 	PointFilter::OffscreenFilter offscreenFilter;
 	pointFilterChain.appendFilter( &offscreenFilter );
+
+	PointFilter::LimitNumberFilter limitNumberFilter;
+	if( pointLimit > 0 )
+	{
+		limitNumberFilter.setLimit( pointLimit );
+		pointFilterChain.appendFilter( &limitNumberFilter );
+	}
 
 	Processor processor( *capture, detector, unprojector );
 	processor.setPointFilter( &pointFilterChain );

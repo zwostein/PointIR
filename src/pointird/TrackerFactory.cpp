@@ -91,7 +91,6 @@ Tracker::ATracker * TrackerFactory::newTracker( unsigned int maxID, const std::s
 }
 
 
-
 std::vector< std::string > TrackerFactory::getAvailableTrackerNames() const
 {
 	std::vector< std::string > trackers;

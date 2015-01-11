@@ -88,6 +88,9 @@ public:
 	bool calibrating = false;
 	bool calibrationSucceeded = false;
 
+	static const unsigned int maxCalibrationTries = 3;
+	unsigned int calibrationTry = 0;
+
 	void endCalibration( bool result )
 	{
 		this->calibrationSucceeded = result;
@@ -202,11 +205,25 @@ void Processor::processFrame()
 	{
 		TIME( calibration );
 		TIMESTART( calibration );
-		//TODO: as soon as there are multiple ways for calibrating, move the calibration logic to an external module/class
+		//TODO: as soon as there are multiple ways for calibration, move the calibration logic to an external module/class
 		if( Unprojector::AAutoUnprojector * autoUnprojector = dynamic_cast<Unprojector::AAutoUnprojector*>( &(this->unprojector) ) )
 		{
 			bool result = autoUnprojector->calibrate( this->frame );
-			this->pImpl->endCalibration( result );
+			this->pImpl->calibrationTry++;
+
+			if( result )
+			{
+				std::cout << "Processor: Calibration attempt " << this->pImpl->calibrationTry << " of " << this->pImpl->maxCalibrationTries << " succeeded\n";
+				this->pImpl->endCalibration( result );
+			}
+			else
+			{
+				std::cout << "Processor: Calibration attempt " << this->pImpl->calibrationTry << " of " << this->pImpl->maxCalibrationTries << " failed\n";
+				if( this->pImpl->calibrationTry >= this->pImpl->maxCalibrationTries )
+				{
+					this->pImpl->endCalibration( result );
+				}
+			}
 		}
 		else
 		{
@@ -255,6 +272,7 @@ bool Processor::startCalibration()
 	if( this->isCalibrating() )
 		return false;
 
+	this->pImpl->calibrationTry = 0;
 	this->pImpl->calibrating = true;
 	this->pImpl->calibrationSucceeded = false;
 

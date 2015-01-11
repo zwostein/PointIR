@@ -108,7 +108,7 @@ Uinput::Uinput( const TrackerFactory * trackerFactory ) :
 	uidev.id.version = 1;
 
 	if( trackerFactory )
-		this->pImpl->tracker = trackerFactory->newTracker( 0xfff );
+		this->pImpl->tracker = trackerFactory->newTracker( 0x1ff );
 	//TODO: the tracker's maximum ID is also used as the maximum ABS_MT_SLOT value below
 	//      interesting fact: a value too high might cause the kernel to freeze! Oo
 	if( this->pImpl->tracker )
@@ -364,8 +364,11 @@ void Uinput::Impl::outputPointsTypeB( const PointIR::PointArray & currentPoints 
 	// remove disappeared contacts
 	for( unsigned int i = 0; i < this->previousPoints.size(); i++ )
 	{
+		if( this->previousIDs[i] < 0 )
+			continue; // slot disabled
+
 		if( this->previousToCurrent[i] >= 0 )
-			continue;
+			continue; // still exists in current frame
 
 		addEvent( events, EV_ABS, ABS_MT_SLOT, this->previousIDs[i] );
 		addEvent( events, EV_ABS, ABS_MT_TRACKING_ID, -1 );
