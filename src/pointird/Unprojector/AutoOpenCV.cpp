@@ -218,15 +218,20 @@ bool AutoOpenCV::calibrate( const PointIR::Frame & frame )
 		offsetX + boardWidth - ((float)boardWidth/(float)chessboardNumFieldsX)/3.0f,
 		offsetY + boardHeight - ((float)boardHeight/(float)chessboardNumFieldsY)/3.0f
 	);
+	PointIR::Point mirrorMarkObjectPoint2( // sampling point for mirrorcheck
+		offsetX + boardWidth - ((float)boardWidth/(float)chessboardNumFieldsX)/3.0f,
+		offsetY + ((float)boardHeight/(float)chessboardNumFieldsY)/3.0f
+	);
 	assert( perspectiveInv.total()*perspectiveInv.elemSize() == sizeof(double)*9 );
 	assert( perspectiveInv.isContinuous() );
 	PointIR::Point mirrorMarkImagePoint = unprojected( (const double *)perspectiveInv.data, mirrorMarkObjectPoint );
+	PointIR::Point mirrorMarkImagePoint2 = unprojected( (const double *)perspectiveInv.data, mirrorMarkObjectPoint2 );
 	bool mirrored = false;
 	if( (int)mirrorMarkImagePoint.x < 0 || (int)mirrorMarkImagePoint.x >= (int)frame.getWidth()
 	 || (int)mirrorMarkImagePoint.y < 0 || (int)mirrorMarkImagePoint.y >= (int)frame.getHeight() )
 		std::cerr << std::string(__PRETTY_FUNCTION__) << ": Mirror marker outside of captured image - assuming no mirror.\n";
 	else
-		mirrored = frame.getAt( (int)mirrorMarkImagePoint.x, (int)mirrorMarkImagePoint.y ) > 0x3f;
+		mirrored = frame.getAt( (int)mirrorMarkImagePoint.x, (int)mirrorMarkImagePoint.y ) > frame.getAt( (int)mirrorMarkImagePoint2.x, (int)mirrorMarkImagePoint2.y );
 	if( mirrored )
 	{
 		std::cout << std::string(__PRETTY_FUNCTION__) << ": Mirror detected.\n";
@@ -259,7 +264,8 @@ bool AutoOpenCV::calibrate( const PointIR::Frame & frame )
 			reinterpret_cast<cv::Point2f &>(screenImagePoints[(i+1)%screenImagePoints.size()]),
 			cv::Scalar(127,0,255) );
 
-	cv::circle( debugImage, reinterpret_cast<cv::Point2f &>(mirrorMarkImagePoint), 4, cv::Scalar(127,0,mirrored?255:127) );
+	cv::circle( debugImage, reinterpret_cast<cv::Point2f &>(mirrorMarkImagePoint), 4, cv::Scalar(127,0,mirrored?127:255) );
+	cv::circle( debugImage, reinterpret_cast<cv::Point2f &>(mirrorMarkImagePoint2), 4, cv::Scalar(127,0,mirrored?255:127) );
 
 	cv::imshow( "Unprojector::AutoOpenCV", debugImage );
 	cv::waitKey(1); // need this for event processing - window wouldn't be visible
